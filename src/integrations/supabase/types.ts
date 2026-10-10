@@ -14,7 +14,237 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          mode: string
+          pinned: boolean
+          project_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mode?: string
+          pinned?: boolean
+          project_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mode?: string
+          pinned?: boolean
+          project_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      memory_facts: {
+        Row: {
+          created_at: string
+          fact: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fact: string
+          id?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          fact?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+          sources: Json | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+          sources?: Json | null
+          user_id?: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          sources?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          ai_use: string | null
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          hobbies: string | null
+          id: string
+          interests: string | null
+          onboarded: boolean
+          updated_at: string
+        }
+        Insert: {
+          ai_use?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          hobbies?: string | null
+          id: string
+          interests?: string | null
+          onboarded?: boolean
+          updated_at?: string
+        }
+        Update: {
+          ai_use?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          hobbies?: string | null
+          id?: string
+          interests?: string | null
+          onboarded?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      project_files: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          path: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          path: string
+          project_id: string
+          user_id?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          path?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          instructions: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          instructions?: string
+          name: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          instructions?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          custom_color: string | null
+          font: string
+          palette: string
+          read_aloud: boolean
+          theme: string
+          updated_at: string
+          user_id: string
+          wake_word: boolean
+        }
+        Insert: {
+          custom_color?: string | null
+          font?: string
+          palette?: string
+          read_aloud?: boolean
+          theme?: string
+          updated_at?: string
+          user_id: string
+          wake_word?: boolean
+        }
+        Update: {
+          custom_color?: string | null
+          font?: string
+          palette?: string
+          read_aloud?: boolean
+          theme?: string
+          updated_at?: string
+          user_id?: string
+          wake_word?: boolean
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
