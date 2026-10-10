@@ -44,8 +44,12 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
   const memorize = useServerFn(extractMemories);
   const endRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => setMode(initialMode), [initialMode]);
-  useEffect(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   useEffect(() => {
     if (!conversationId) return;
