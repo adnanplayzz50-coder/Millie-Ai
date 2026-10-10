@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Logo } from "@/components/Logo";
+import { PROVIDER_ICONS } from "@/components/ProviderIcons";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -46,9 +47,14 @@ function Auth() {
         <Logo className="mx-auto size-16" />
         <h1 className="font-read text-3xl">Millie</h1>
         <div className="space-y-2">
-          {(["google", "apple", "microsoft"] as const).map((p) => (
-            <Button key={p} variant="outline" className="w-full capitalize" onClick={() => social(p)}>Continue with {p}</Button>
-          ))}
+          {(["google", "apple", "microsoft"] as const).map((p) => {
+            const Icon = PROVIDER_ICONS[p];
+            return (
+              <Button key={p} variant="outline" className="w-full gap-2 capitalize" onClick={() => social(p)}>
+                <Icon className="size-4" /> Continue with {p}
+              </Button>
+            );
+          })}
         </div>
         <form onSubmit={submit} className="space-y-2">
           <Input type="email" required placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
