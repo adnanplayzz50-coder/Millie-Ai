@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Globe, Menu, Mic, Paperclip, Send, Square } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/components/app/AppProvider";
@@ -67,7 +68,7 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     const next = [...history, user];
     setMessages(next);
     setBusy(true);
-    await supabase.from("messages").insert({ conversation_id: conversationId!, role: "user", content: text, sources: user.meta });
+    await supabase.from("messages").insert({ conversation_id: conversationId!, role: "user", content: text, sources: (user.meta ?? {}) as unknown as Json });
     const wire = next.map((m) => ({ role: m.role, content: m.meta?.context ? `${m.content}\n\n${m.meta.context}` : m.content, images: m.images }));
     let reply = "";
     let sources: Source[] | undefined;
@@ -84,7 +85,7 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     setMessages([...next, { id: aid, role: "assistant", content: reply, meta: { sources } }]);
     setBusy(false);
     if (reply) {
-      await supabase.from("messages").insert({ conversation_id: conversationId!, role: "assistant", content: reply, sources: { sources } });
+      await supabase.from("messages").insert({ conversation_id: conversationId!, role: "assistant", content: reply, sources: { sources: sources ?? [] } as unknown as Json });
       await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId!);
       invalidate("conversations");
       if (settings.read_aloud || forceSpeak) speak(reply);
