@@ -5,6 +5,8 @@ export interface PendingSend {
   attachments: Attachment[];
   webSearch: boolean;
   speak?: boolean;
+  /** Hidden context for the model only (not shown or saved), e.g. video-call notes. */
+  hint?: string;
 }
 
 /** Hand-off for the first message of a freshly created conversation. */
