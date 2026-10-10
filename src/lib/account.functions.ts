@@ -15,7 +15,7 @@ export const extractMemories = createServerFn({ method: "POST" })
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
       body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
+        model: "openai/gpt-oss-120b",
         temperature: 0,
         max_tokens: 400,
         response_format: { type: "json_object" },
