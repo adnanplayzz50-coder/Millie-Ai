@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Camera, Globe, Menu, Mic, Monitor, Paperclip, Send, Square, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -221,7 +221,12 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
                 </div>
               ) : (
                 <div key={m.id} className="prose-millie animate-fade-up">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    urlTransform={(url) => (url.startsWith("data:image/") ? url : defaultUrlTransform(url))}
+                  >
+                    {m.content}
+                  </ReactMarkdown>
                   {!!m.meta?.sources?.length && (
                     <div className="mt-3 border-t border-border pt-2 font-sans text-sm">
                       <p className="text-xs text-muted-foreground">Sources</p>
