@@ -15,6 +15,15 @@ const GEMINI_MODEL = "gemini-3-flash-preview";
 const CURRENT_INFO =
   /\b(news|latest|today|tonight|yesterday|this week|right now|currently|current|price|prices|cost of|stock|score|scores|weather|forecast|election|released|update on|trending|2025|2026)\b/i;
 
+const IMAGE_REQUEST =
+  /\b(generate|create|make|draw|paint|design|render|produce)\b[\s\S]{0,40}\b(image|picture|photo|drawing|painting|illustration|logo|wallpaper|artwork|art)\b/i;
+
+/** Free, no-key image generation (Pollinations, Flux model). */
+function imageUrl(prompt: string) {
+  const p = encodeURIComponent(prompt.slice(0, 500));
+  return `https://image.pollinations.ai/prompt/${p}?width=1024&height=1024&nologo=true&model=flux&seed=${Math.floor(Math.random() * 1e6)}`;
+}
+
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json" } });
 
@@ -149,7 +158,11 @@ export async function handleChat(request: Request): Promise<Response> {
     async start(controller) {
       const emit = (type: string, value: unknown) => controller.enqueue(enc.encode(JSON.stringify({ type, value }) + "\n"));
       try {
-        if (hasImages || search) {
+        if (!hasImages && body.mode === "chat" && IMAGE_REQUEST.test(last.content)) {
+          emit("route", "image");
+          const alt = last.content.replace(/[\[\]]/g, "").slice(0, 80);
+          emit("text", `Here's your picture:\n\n![${alt}](${imageUrl(last.content)})\n\nIf it's slow to load, give it a few seconds, since free image generation can be busy.`);
+        } else if (hasImages || search) {
           const key = process.env["GEMINI_API_KEY"];
           if (!key) throw new Error(keyError("GEMINI_API_KEY", "missing key"));
           emit("route", search ? "search" : "vision");
