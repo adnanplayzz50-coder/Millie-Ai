@@ -12,8 +12,6 @@ interface Body {
 
 const GROQ_MODEL = "openai/gpt-oss-120b";
 const GEMINI_MODEL = "gemini-3-flash-preview";
-const CURRENT_INFO =
-  /\b(news|latest|today|tonight|yesterday|this week|right now|currently|current|price|prices|cost of|stock|score|scores|weather|forecast|election|released|update on|trending|2025|2026)\b/i;
 
 const IMAGE_REQUEST =
   /\b(generate|create|make|draw|paint|design|render|produce)\b[\s\S]{0,40}\b(image|picture|photo|drawing|painting|illustration|logo|wallpaper|artwork|art)\b/i;
@@ -22,8 +20,7 @@ const IMAGE_REQUEST =
 async function makeImage(prompt: string): Promise<string> {
   const account = process.env["CLOUDFLARE_ACCOUNT_ID"];
   const token = process.env["CLOUDFLARE_API_TOKEN"];
-  if (!account) throw new Error("To make pictures, add the CLOUDFLARE_ACCOUNT_ID secret in Project Settings → Secrets.");
-  if (!token) throw new Error("To make pictures, add the CLOUDFLARE_API_TOKEN secret in Project Settings → Secrets.");
+  if (!account || !token) throw new Error(keyError("CLOUDFLARE_API_TOKEN", "missing account ID or token"));
   const res = await fetch(
     `https://api.cloudflare.com/client/v4/accounts/${account}/ai/run/@cf/black-forest-labs/flux-1-schnell`,
     {
@@ -35,8 +32,8 @@ async function makeImage(prompt: string): Promise<string> {
   if (!res.ok) {
     const t = await res.text();
     console.error("Cloudflare error", res.status, t.slice(0, 300));
-    if (res.status === 403) {
-      throw new Error("Cloudflare refused the request: the CLOUDFLARE_API_TOKEN needs the Workers AI permission.");
+    if (res.status === 401 || res.status === 403) {
+      throw new Error("Cloudflare rejected the token. Make sure the API token has the Workers AI permission.");
     }
     if (res.status === 429) throw new Error("Today's free image allowance is used up. Try again tomorrow.");
     throw new Error(`Image request failed (${res.status}).`);
@@ -154,6 +151,49 @@ async function* sseLines(res: Response) {
   }
 }
 
+type Emit = (type: string, value: unknown) => void;
+
+/** Streams a text-only answer from Groq. Used for normal chat, and as the fallback when Gemini is busy. */
+async function streamGroq(opts: {
+  system: string;
+  messages: Msg[];
+  body: Body;
+  emit: Emit;
+  signal: AbortSignal;
+  note?: string;
+}) {
+  const { system, messages, body, emit, signal, note } = opts;
+  const key = process.env["GROQ_API_KEY"];
+  if (!key) throw new Error(keyError("GROQ_API_KEY", "missing key"));
+  if (note) emit("text", note);
+  emit("route", "groq");
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      stream: true,
+      temperature: body.mode === "code" ? 0.3 : 0.7,
+      max_tokens: body.mode === "code" ? 8000 : 4000,
+      messages: [{ role: "system", content: system }, ...messages.map((m) => ({ role: m.role, content: m.content }))],
+    }),
+    signal,
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    console.error("Groq error", res.status, t.slice(0, 500));
+    if (res.status === 401 || res.status === 403) throw new Error(keyError("GROQ_API_KEY", "key rejected"));
+    if (res.status === 429) throw new Error("Groq's free-tier rate limit was reached. Please wait a moment and try again.");
+    if (res.status === 413) throw new Error("That message is too large for the free Groq tier. Try attaching fewer or smaller files.");
+    throw new Error(`Groq request failed (${res.status}). Check the GROQ_API_KEY secret in Project Settings → Secrets.`);
+  }
+  for await (const data of sseLines(res)) {
+    if (data === "[DONE]") break;
+    const t = JSON.parse(data).choices?.[0]?.delta?.content;
+    if (t) emit("text", t);
+  }
+}
+
 export async function handleChat(request: Request): Promise<Response> {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!token) return json({ error: "Please sign in again." }, 401);
@@ -173,12 +213,13 @@ export async function handleChat(request: Request): Promise<Response> {
 
   const system = await buildSystem(sb, userData.user.id, body, last.content);
   const hasImages = !!last.images?.length;
-  const search = !!body.webSearch || (body.mode === "chat" && CURRENT_INFO.test(last.content));
+  // Google search only runs when the user turns on the globe button. Nothing else uses it automatically.
+  const search = !!body.webSearch;
 
   const enc = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
-      const emit = (type: string, value: unknown) => controller.enqueue(enc.encode(JSON.stringify({ type, value }) + "\n"));
+      const emit: Emit = (type, value) => controller.enqueue(enc.encode(JSON.stringify({ type, value }) + "\n"));
       try {
         if (!hasImages && body.mode === "chat" && IMAGE_REQUEST.test(last.content)) {
           emit("route", "image");
@@ -203,12 +244,28 @@ export async function handleChat(request: Request): Promise<Response> {
               signal: request.signal,
             },
           );
+
+          // Gemini's free daily quota is used up: answer in text with Groq instead of failing.
+          if (res.status === 429) {
+            await res.text().catch(() => "");
+            await streamGroq({
+              system,
+              messages,
+              body,
+              emit,
+              signal: request.signal,
+              note: hasImages
+                ? "(Screen view is busy right now, so I'm answering from your message alone.)\n\n"
+                : "(Google search is busy right now, so I'm answering without it.)\n\n",
+            });
+            return;
+          }
+
           if (!res.ok) {
             const t = await res.text();
             console.error("Gemini error", res.status, t.slice(0, 500));
             if (res.status === 400 && /API key/i.test(t)) throw new Error(keyError("GEMINI_API_KEY", "invalid key"));
             if (res.status === 401 || res.status === 403) throw new Error(keyError("GEMINI_API_KEY", "key rejected"));
-            if (res.status === 429) throw new Error("Gemini's free-tier rate limit was reached. Please wait a minute and try again.");
             throw new Error(`Gemini request failed (${res.status}). Check the GEMINI_API_KEY secret in Project Settings → Secrets.`);
           }
           const sources = new Map<string, string>();
@@ -222,34 +279,7 @@ export async function handleChat(request: Request): Promise<Response> {
           }
           if (sources.size) emit("sources", [...sources].map(([uri, title]) => ({ uri, title })));
         } else {
-          const key = process.env["GROQ_API_KEY"];
-          if (!key) throw new Error(keyError("GROQ_API_KEY", "missing key"));
-          emit("route", "groq");
-          const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-            body: JSON.stringify({
-              model: GROQ_MODEL,
-              stream: true,
-              temperature: body.mode === "code" ? 0.3 : 0.7,
-              max_tokens: body.mode === "code" ? 8000 : 4000,
-              messages: [{ role: "system", content: system }, ...messages.map((m) => ({ role: m.role, content: m.content }))],
-            }),
-            signal: request.signal,
-          });
-          if (!res.ok) {
-            const t = await res.text();
-            console.error("Groq error", res.status, t.slice(0, 500));
-            if (res.status === 401 || res.status === 403) throw new Error(keyError("GROQ_API_KEY", "key rejected"));
-            if (res.status === 429) throw new Error("Groq's free-tier rate limit was reached. Please wait a moment and try again.");
-            if (res.status === 413) throw new Error("That message is too large for the free Groq tier. Try attaching fewer or smaller files.");
-            throw new Error(`Groq request failed (${res.status}). Check the GROQ_API_KEY secret in Project Settings → Secrets.`);
-          }
-          for await (const data of sseLines(res)) {
-            if (data === "[DONE]") break;
-            const t = JSON.parse(data).choices?.[0]?.delta?.content;
-            if (t) emit("text", t);
-          }
+          await streamGroq({ system, messages, body, emit, signal: request.signal });
         }
       } catch (e) {
         if ((e as Error).name !== "AbortError") emit("error", (e as Error).message || "Something went wrong.");
