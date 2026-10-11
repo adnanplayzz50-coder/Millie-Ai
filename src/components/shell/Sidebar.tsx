@@ -1,19 +1,16 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
-  Brain,
   Download,
-  Eye,
-  EyeOff,
   FolderKanban,
   Moon,
   MoreHorizontal,
-  Palette,
   Pencil,
   Pin,
   PinOff,
   Plus,
   Search,
+  Settings as SettingsIcon,
   Sun,
   Trash2,
   X,
@@ -25,7 +22,9 @@ import { useApp } from "@/components/app/AppProvider";
 import { useConversations, useInvalidate, useProjects, type ConversationRow } from "@/hooks/use-data";
 import { exportConversation } from "@/lib/export";
 import { isDark } from "@/lib/theme";
-import { useShowChats } from "@/hooks/use-show-chats";
+import { useHideExChats } from "@/hooks/use-hide-ex-chats";
+import { useExtensionLink } from "@/hooks/use-extension-link";
+import { SettingsSheet } from "./SettingsSheet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -40,17 +39,14 @@ import { cn } from "@/lib/utils";
 import { WakeIndicator } from "./WakeIndicator";
 
 type Tab = "chats" | "older" | "projects";
-const TABS: { key: Tab; label: string }[] = [
-  { key: "chats", label: "Chats" },
-  { key: "older", label: "Ex-Chats" },
-  { key: "projects", label: "Projects" },
-];
 
 export function Sidebar() {
-  const { profile, user, settings, updateSettings, setCustomizeOpen, setSidebarOpen } = useApp();
-  const [tab, setTab] = useState<Tab>("chats");
+  const { profile, user, settings, updateSettings, setSidebarOpen } = useApp();
+  const [tabState, setTabState] = useState<Tab>("chats");
   const [q, setQ] = useState("");
-  const [showChats, setShowChats] = useShowChats();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [hideEx] = useHideExChats();
+  useExtensionLink();
   const convs = useConversations();
   const projects = useProjects();
   const navigate = useNavigate();
@@ -67,6 +63,14 @@ export function Sidebar() {
       older: sorted(list.filter((c) => !c.pinned && !isRecent(c))),
     };
   }, [convs.data, q]);
+  // With Ex-Chats hidden, the Ex-Chats tab disappears and older chats are not listed.
+  const tabs: { key: Tab; label: string }[] = [
+    { key: "chats", label: "Chats" },
+    ...(hideEx ? [] : [{ key: "older" as const, label: "Ex-Chats" }]),
+    { key: "projects", label: "Projects" },
+  ];
+  const tab = hideEx && tabState === "older" ? "chats" : tabState;
+  const setTab = setTabState;
   const visible = tab === "older" ? older : recent;
 
   const dark = isDark(settings.theme);
@@ -100,7 +104,7 @@ export function Sidebar() {
       </div>
 
       <div className="mt-3 flex gap-1 px-3 text-sm">
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
@@ -115,36 +119,27 @@ export function Sidebar() {
       </div>
 
       {tab !== "projects" ? (
-        !showChats ? (
-          <div className="px-4 py-8 text-center text-xs text-muted-foreground">
-            <p>Your chat list is hidden.</p>
-            <button onClick={() => setShowChats(true)} className="mt-2 text-primary underline">
-              Show chats
-            </button>
+        <>
+          <div className="relative mx-3 mt-3">
+            <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search chats"
+              className="h-8 border-border/60 bg-transparent pl-8 text-sm"
+            />
           </div>
-        ) : (
-          <>
-            <div className="relative mx-3 mt-3">
-              <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Search chats"
-                className="h-8 border-border/60 bg-transparent pl-8 text-sm"
-              />
-            </div>
-            <nav className="mt-2 flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
-              {visible.map((c) => (
-                <ConversationItem key={c.id} c={c} onNavigate={close} />
-              ))}
-              {!convs.isLoading && !visible.length && (
-                <p className="px-3 py-6 text-center text-xs text-muted-foreground">
-                  {tab === "older" ? "No older chats" : "No chats yet"}
-                </p>
-              )}
-            </nav>
-          </>
-        )
+          <nav className="mt-2 flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
+            {visible.map((c) => (
+              <ConversationItem key={c.id} c={c} onNavigate={close} />
+            ))}
+            {!convs.isLoading && !visible.length && (
+              <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+                {tab === "older" ? "No older chats" : "No chats yet"}
+              </p>
+            )}
+          </nav>
+        </>
       ) : (
         <nav className="mt-3 flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
           <Link
@@ -170,41 +165,7 @@ export function Sidebar() {
       )}
 
       <div className="space-y-1 border-t border-border p-2">
-        <button
-          onClick={() => setShowChats(!showChats)}
-          aria-pressed={showChats}
-          className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
-        >
-          {showChats ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
-          <span className="flex-1 text-left">{showChats ? "Chats shown" : "Chats hidden"}</span>
-          <span
-            className={cn(
-              "relative h-5 w-9 rounded-full transition-colors",
-              showChats ? "bg-primary" : "bg-muted",
-            )}
-          >
-            <span
-              className={cn(
-                "absolute top-0.5 size-4 rounded-full bg-background transition-transform",
-                showChats ? "translate-x-4" : "translate-x-0.5",
-              )}
-            />
-          </span>
-        </button>
-        <Link
-          to="/memory"
-          onClick={close}
-          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
-        >
-          <Brain className="size-4" /> Memory
-        </Link>
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => setCustomizeOpen(true)}
-            className="flex flex-1 items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            <Palette className="size-4" /> Customize
-          </button>
           <Button
             variant="ghost"
             size="icon"
@@ -214,20 +175,22 @@ export function Sidebar() {
             {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
           </Button>
         </div>
-        <Link
-          to="/account"
-          onClick={close}
-          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent"
-        >
-          <Avatar className="size-7">
-            <AvatarImage src={profile?.avatar_url ?? undefined} />
-            <AvatarFallback className="bg-accent text-xs">
-              {(profile?.display_name || user.email || "?").slice(0, 1).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <span className="truncate">{profile?.display_name || user.email}</span>
-        </Link>
+        <div className="flex items-center gap-1 rounded-md pr-1 hover:bg-accent">
+          <Link to="/account" onClick={close} className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-sm">
+            <Avatar className="size-7">
+              <AvatarImage src={profile?.avatar_url ?? undefined} />
+              <AvatarFallback className="bg-accent text-xs">
+                {(profile?.display_name || user.email || "?").slice(0, 1).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <span className="truncate">{profile?.display_name || user.email}</span>
+          </Link>
+          <Button variant="ghost" size="icon" aria-label="Settings" onClick={() => setSettingsOpen(true)}>
+            <SettingsIcon className="size-4" />
+          </Button>
+        </div>
       </div>
+      <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} />
     </aside>
   );
 }
