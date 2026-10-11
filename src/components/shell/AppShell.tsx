@@ -6,6 +6,7 @@ import { CustomizeSheet } from "./CustomizeSheet";
 import { CommandPalette } from "./CommandPalette";
 import { OnboardingDialog } from "./OnboardingDialog";
 import { WakeWordProvider } from "./WakeWord";
+import { WhatsNew } from "./WhatsNew";
 import { cn } from "@/lib/utils";
 
 export function AppShell({ user }: { user: User }) {
@@ -39,6 +40,7 @@ function Layout() {
       <CustomizeSheet />
       <CommandPalette />
       <OnboardingDialog />
+      <WhatsNew />
     </div>
   );
 }
