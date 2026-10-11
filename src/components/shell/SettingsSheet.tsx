@@ -81,6 +81,13 @@ export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenCha
                   <a
                     href={EXTENSION_ZIP_URL}
                     download="millie-extension.zip"
+                    onClick={() => {
+                      // Let the download start, then take the user to the install steps.
+                      setTimeout(() => {
+                        onOpenChange(false);
+                        navigate({ to: "/extension-setup" });
+                      }, 1000);
+                    }}
                     className="inline-flex h-8 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90"
                   >
                     Download
