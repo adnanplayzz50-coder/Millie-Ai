@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { Markdown } from "./Markdown";
 import { Camera, Mic, MicOff, Monitor, PenLine, PhoneOff, Send, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
@@ -309,7 +308,7 @@ export function VideoCall({
                 </div>
               ) : (
                 <div key={m.id} className="prose-millie text-sm">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                  <Markdown>{m.content}</Markdown>
                 </div>
               ),
             )}

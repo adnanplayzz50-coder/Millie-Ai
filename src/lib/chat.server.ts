@@ -22,7 +22,8 @@ const IMAGE_REQUEST =
 async function makeImage(prompt: string): Promise<string> {
   const account = process.env["CLOUDFLARE_ACCOUNT_ID"];
   const token = process.env["CLOUDFLARE_API_TOKEN"];
-  if (!account || !token) throw new Error(keyError("CLOUDFLARE_API_TOKEN", "missing account ID or token"));
+  if (!account) throw new Error("To make pictures, add the CLOUDFLARE_ACCOUNT_ID secret in Project Settings → Secrets.");
+  if (!token) throw new Error("To make pictures, add the CLOUDFLARE_API_TOKEN secret in Project Settings → Secrets.");
   const res = await fetch(
     `https://api.cloudflare.com/client/v4/accounts/${account}/ai/run/@cf/black-forest-labs/flux-1-schnell`,
     {
@@ -34,8 +35,8 @@ async function makeImage(prompt: string): Promise<string> {
   if (!res.ok) {
     const t = await res.text();
     console.error("Cloudflare error", res.status, t.slice(0, 300));
-    if (res.status === 401 || res.status === 403) {
-      throw new Error("Cloudflare rejected the token. Make sure the API token has the Workers AI permission.");
+    if (res.status === 403) {
+      throw new Error("Cloudflare refused the request: the CLOUDFLARE_API_TOKEN needs the Workers AI permission.");
     }
     if (res.status === 429) throw new Error("Today's free image allowance is used up. Try again tomorrow.");
     throw new Error(`Image request failed (${res.status}).`);
