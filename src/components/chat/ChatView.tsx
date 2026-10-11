@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { Markdown } from "./Markdown";
+import { ProjectCard } from "./ProjectCard";
+import { parseReply } from "@/lib/project-parser";
 import { Camera, Globe, Menu, Mic, Monitor, Paperclip, Send, Square, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
@@ -221,12 +222,16 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
                 </div>
               ) : (
                 <div key={m.id} className="prose-millie animate-fade-up">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    urlTransform={(url) => (url.startsWith("data:image/") ? url : defaultUrlTransform(url))}
-                  >
-                    {m.content}
-                  </ReactMarkdown>
+                  {(() => {
+                    const r = parseReply(m.content);
+                    return (
+                      <>
+                        {r.before && <Markdown>{r.before}</Markdown>}
+                        {r.project && <ProjectCard project={r.project} />}
+                        {r.after && <Markdown>{r.after}</Markdown>}
+                      </>
+                    );
+                  })()}
                   {!!m.meta?.sources?.length && (
                     <div className="mt-3 border-t border-border pt-2 font-sans text-sm">
                       <p className="text-xs text-muted-foreground">Sources</p>

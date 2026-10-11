@@ -27,6 +27,9 @@ Rules for projects:
 - Every file must be COMPLETE. Never truncate, never write "rest of code here".
 - Include every file needed to run it, plus a README.md with setup and run instructions.
 - Paths are relative, using forward slashes (e.g. src/main.js).
+- Never write placeholders such as "omitted for brevity", "see above", "add your own", or "...".
+- Every file the README or steps mention must be included in full.
+- Always include the build file for the project type (pom.xml for Maven/Java, build.gradle for Gradle, package.json for Node, requirements.txt for Python) and required config files such as plugin.yml for Bukkit/Spigot plugins.
 - After </project>, add 1-3 sentences on how to run it.`;
 
 export const MEMORY_PROMPT = `You extract durable facts about the USER worth remembering for future conversations: preferences, ongoing projects, routines, goals, important personal context.
