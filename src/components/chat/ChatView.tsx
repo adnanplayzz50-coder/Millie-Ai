@@ -301,7 +301,14 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="ghost" size="icon" onClick={() => setWeb(!web)} aria-label="Search the web" className={cn(web && "text-primary")}>
+          <Button
+  variant="ghost"
+  size="icon"
+  onClick={() => setWeb(!web)}
+  aria-label="Search the web"
+  title="Search the web with Google. Only runs when this is on."
+  className={cn(web && "text-primary")}
+>
             <Globe className="size-4" />
           </Button>
           <textarea
