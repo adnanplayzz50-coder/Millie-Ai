@@ -64,8 +64,8 @@ function ExtensionSetup() {
   }, [open]);
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-3xl space-y-8 px-4 py-10 sm:px-6">
+    <div className="h-full overflow-y-auto overflow-x-hidden">
+      <div className="mx-auto w-full max-w-3xl min-w-0 space-y-8 px-4 py-10 sm:px-6">
         <header className="space-y-2">
           <h1 className="font-read text-3xl tracking-tight">Install the Millie Chrome extension</h1>
           <p className="text-muted-foreground">Five quick steps. Follow them in order. Click a picture to zoom in.</p>
@@ -82,17 +82,17 @@ function ExtensionSetup() {
           {STEPS.map((step, i) => (
             <li
               key={step.image}
-              className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-5"
+              className="flex min-w-0 flex-col gap-4 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-5"
             >
               <button
                 type="button"
                 onClick={() => openAt(i)}
-                className="w-full shrink-0 cursor-zoom-in overflow-hidden rounded-xl border border-border bg-background sm:w-[360px]"
+                className="w-full min-w-0 shrink-0 cursor-zoom-in overflow-hidden rounded-xl border border-border bg-background sm:w-[360px]"
                 aria-label={`Zoom in: ${step.alt}`}
               >
                 <img src={step.image} alt={step.alt} className="block w-full object-contain transition-transform hover:scale-[1.01]" />
               </button>
-              <div className="flex gap-3">
+              <div className="flex min-w-0 flex-1 gap-3">
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">
                   {i + 1}
                 </span>
