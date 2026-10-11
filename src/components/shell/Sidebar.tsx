@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   Brain,
   Download,
+  Eye,
+  EyeOff,
   FolderKanban,
   Moon,
   MoreHorizontal,
@@ -23,6 +25,7 @@ import { useApp } from "@/components/app/AppProvider";
 import { useConversations, useInvalidate, useProjects, type ConversationRow } from "@/hooks/use-data";
 import { exportConversation } from "@/lib/export";
 import { isDark } from "@/lib/theme";
+import { useShowChats } from "@/hooks/use-show-chats";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -36,18 +39,35 @@ import {
 import { cn } from "@/lib/utils";
 import { WakeIndicator } from "./WakeIndicator";
 
+type Tab = "chats" | "older" | "projects";
+const TABS: { key: Tab; label: string }[] = [
+  { key: "chats", label: "Chats" },
+  { key: "older", label: "Ex-Chats" },
+  { key: "projects", label: "Projects" },
+];
+
 export function Sidebar() {
   const { profile, user, settings, updateSettings, setCustomizeOpen, setSidebarOpen } = useApp();
-  const [tab, setTab] = useState<"chats" | "projects">("chats");
+  const [tab, setTab] = useState<Tab>("chats");
   const [q, setQ] = useState("");
+  const [showChats, setShowChats] = useShowChats();
   const convs = useConversations();
   const projects = useProjects();
   const navigate = useNavigate();
 
-  const filtered = useMemo(() => {
+  // Chats: pinned first, then anything used in the last 7 days.
+  // Ex-Chats: everything older than that, unless pinned.
+  const { recent, older } = useMemo(() => {
     const list = (convs.data ?? []).filter((c) => c.title.toLowerCase().includes(q.toLowerCase()));
-    return [...list.filter((c) => c.pinned), ...list.filter((c) => !c.pinned)];
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const isRecent = (c: ConversationRow) => new Date(c.updated_at).getTime() >= cutoff;
+    const sorted = (xs: ConversationRow[]) => [...xs.filter((c) => c.pinned), ...xs.filter((c) => !c.pinned)];
+    return {
+      recent: sorted(list.filter((c) => c.pinned || isRecent(c))),
+      older: sorted(list.filter((c) => !c.pinned && !isRecent(c))),
+    };
   }, [convs.data, q]);
+  const visible = tab === "older" ? older : recent;
 
   const dark = isDark(settings.theme);
   const close = () => setSidebarOpen(false);
@@ -80,40 +100,51 @@ export function Sidebar() {
       </div>
 
       <div className="mt-3 flex gap-1 px-3 text-sm">
-        {(["chats", "projects"] as const).map((t) => (
+        {TABS.map((t) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={t.key}
+            onClick={() => setTab(t.key)}
             className={cn(
-              "flex-1 rounded-md px-2 py-1.5 capitalize transition-colors",
-              tab === t ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground",
+              "flex-1 rounded-md px-2 py-1.5 transition-colors",
+              tab === t.key ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground",
             )}
           >
-            {t}
+            {t.label}
           </button>
         ))}
       </div>
 
-      {tab === "chats" ? (
-        <>
-          <div className="relative mx-3 mt-3">
-            <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search chats"
-              className="h-8 border-border/60 bg-transparent pl-8 text-sm"
-            />
+      {tab !== "projects" ? (
+        !showChats ? (
+          <div className="px-4 py-8 text-center text-xs text-muted-foreground">
+            <p>Your chat list is hidden.</p>
+            <button onClick={() => setShowChats(true)} className="mt-2 text-primary underline">
+              Show chats
+            </button>
           </div>
-          <nav className="mt-2 flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
-            {filtered.map((c) => (
-              <ConversationItem key={c.id} c={c} onNavigate={close} />
-            ))}
-            {!convs.isLoading && !filtered.length && (
-              <p className="px-3 py-6 text-center text-xs text-muted-foreground">No chats yet</p>
-            )}
-          </nav>
-        </>
+        ) : (
+          <>
+            <div className="relative mx-3 mt-3">
+              <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search chats"
+                className="h-8 border-border/60 bg-transparent pl-8 text-sm"
+              />
+            </div>
+            <nav className="mt-2 flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
+              {visible.map((c) => (
+                <ConversationItem key={c.id} c={c} onNavigate={close} />
+              ))}
+              {!convs.isLoading && !visible.length && (
+                <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+                  {tab === "older" ? "No older chats" : "No chats yet"}
+                </p>
+              )}
+            </nav>
+          </>
+        )
       ) : (
         <nav className="mt-3 flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
           <Link
@@ -139,6 +170,27 @@ export function Sidebar() {
       )}
 
       <div className="space-y-1 border-t border-border p-2">
+        <button
+          onClick={() => setShowChats(!showChats)}
+          aria-pressed={showChats}
+          className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
+          {showChats ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+          <span className="flex-1 text-left">{showChats ? "Chats shown" : "Chats hidden"}</span>
+          <span
+            className={cn(
+              "relative h-5 w-9 rounded-full transition-colors",
+              showChats ? "bg-primary" : "bg-muted",
+            )}
+          >
+            <span
+              className={cn(
+                "absolute top-0.5 size-4 rounded-full bg-background transition-transform",
+                showChats ? "translate-x-4" : "translate-x-0.5",
+              )}
+            />
+          </span>
+        </button>
         <Link
           to="/memory"
           onClick={close}
