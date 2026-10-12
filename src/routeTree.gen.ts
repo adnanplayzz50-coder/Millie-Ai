@@ -15,7 +15,9 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedCallRouteImport } from './routes/_authenticated/call'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
+import { Route as AuthenticatedExtensionSetupRouteImport } from './routes/_authenticated/extension-setup'
 import { Route as AuthenticatedMemoryRouteImport } from './routes/_authenticated/memory'
+import { Route as AuthenticatedSidebarRouteImport } from './routes/_authenticated/sidebar'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedCIdRouteImport } from './routes/_authenticated/c.$id'
 import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
@@ -50,9 +52,20 @@ const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedExtensionSetupRoute =
+  AuthenticatedExtensionSetupRouteImport.update({
+    id: '/extension-setup',
+    path: '/extension-setup',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMemoryRoute = AuthenticatedMemoryRouteImport.update({
   id: '/memory',
   path: '/memory',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSidebarRoute = AuthenticatedSidebarRouteImport.update({
+  id: '/sidebar',
+  path: '/sidebar',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -83,7 +96,9 @@ export interface FileRoutesByFullPath {
   '/account': typeof AuthenticatedAccountRoute
   '/call': typeof AuthenticatedCallRoute
   '/chat': typeof AuthenticatedChatRoute
+  '/extension-setup': typeof AuthenticatedExtensionSetupRoute
   '/memory': typeof AuthenticatedMemoryRoute
+  '/sidebar': typeof AuthenticatedSidebarRoute
   '/api/chat': typeof ApiChatRoute
   '/c/$id': typeof AuthenticatedCIdRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
@@ -95,7 +110,9 @@ export interface FileRoutesByTo {
   '/account': typeof AuthenticatedAccountRoute
   '/call': typeof AuthenticatedCallRoute
   '/chat': typeof AuthenticatedChatRoute
+  '/extension-setup': typeof AuthenticatedExtensionSetupRoute
   '/memory': typeof AuthenticatedMemoryRoute
+  '/sidebar': typeof AuthenticatedSidebarRoute
   '/api/chat': typeof ApiChatRoute
   '/c/$id': typeof AuthenticatedCIdRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
@@ -109,7 +126,9 @@ export interface FileRoutesById {
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/call': typeof AuthenticatedCallRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
+  '/_authenticated/extension-setup': typeof AuthenticatedExtensionSetupRoute
   '/_authenticated/memory': typeof AuthenticatedMemoryRoute
+  '/_authenticated/sidebar': typeof AuthenticatedSidebarRoute
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/c/$id': typeof AuthenticatedCIdRoute
   '/_authenticated/projects/$id': typeof AuthenticatedProjectsIdRoute
@@ -123,7 +142,9 @@ export interface FileRouteTypes {
     | '/account'
     | '/call'
     | '/chat'
+    | '/extension-setup'
     | '/memory'
+    | '/sidebar'
     | '/api/chat'
     | '/c/$id'
     | '/projects/$id'
@@ -135,7 +156,9 @@ export interface FileRouteTypes {
     | '/account'
     | '/call'
     | '/chat'
+    | '/extension-setup'
     | '/memory'
+    | '/sidebar'
     | '/api/chat'
     | '/c/$id'
     | '/projects/$id'
@@ -148,7 +171,9 @@ export interface FileRouteTypes {
     | '/_authenticated/account'
     | '/_authenticated/call'
     | '/_authenticated/chat'
+    | '/_authenticated/extension-setup'
     | '/_authenticated/memory'
+    | '/_authenticated/sidebar'
     | '/api/chat'
     | '/_authenticated/c/$id'
     | '/_authenticated/projects/$id'
@@ -206,11 +231,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/extension-setup': {
+      id: '/_authenticated/extension-setup'
+      path: '/extension-setup'
+      fullPath: '/extension-setup'
+      preLoaderRoute: typeof AuthenticatedExtensionSetupRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/memory': {
       id: '/_authenticated/memory'
       path: '/memory'
       fullPath: '/memory'
       preLoaderRoute: typeof AuthenticatedMemoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/sidebar': {
+      id: '/_authenticated/sidebar'
+      path: '/sidebar'
+      fullPath: '/sidebar'
+      preLoaderRoute: typeof AuthenticatedSidebarRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/chat': {
@@ -248,7 +287,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
   AuthenticatedCallRoute: typeof AuthenticatedCallRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
+  AuthenticatedExtensionSetupRoute: typeof AuthenticatedExtensionSetupRoute
   AuthenticatedMemoryRoute: typeof AuthenticatedMemoryRoute
+  AuthenticatedSidebarRoute: typeof AuthenticatedSidebarRoute
   AuthenticatedCIdRoute: typeof AuthenticatedCIdRoute
   AuthenticatedProjectsIdRoute: typeof AuthenticatedProjectsIdRoute
   AuthenticatedProjectsIndexRoute: typeof AuthenticatedProjectsIndexRoute
@@ -258,7 +299,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountRoute: AuthenticatedAccountRoute,
   AuthenticatedCallRoute: AuthenticatedCallRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
+  AuthenticatedExtensionSetupRoute: AuthenticatedExtensionSetupRoute,
   AuthenticatedMemoryRoute: AuthenticatedMemoryRoute,
+  AuthenticatedSidebarRoute: AuthenticatedSidebarRoute,
   AuthenticatedCIdRoute: AuthenticatedCIdRoute,
   AuthenticatedProjectsIdRoute: AuthenticatedProjectsIdRoute,
   AuthenticatedProjectsIndexRoute: AuthenticatedProjectsIndexRoute,
