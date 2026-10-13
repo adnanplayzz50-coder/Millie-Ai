@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
+  ChevronsLeft,
+  ChevronsRight,
   Download,
   FolderKanban,
   Moon,
@@ -46,6 +48,13 @@ export function Sidebar() {
   const [q, setQ] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [hideEx] = useHideExChats();
+  const [collapsed, setCollapsedState] = useState(() =>
+    typeof window !== "undefined" && localStorage.getItem("millie-history-collapsed") === "true",
+  );
+  const setCollapsed = (v: boolean) => {
+    setCollapsedState(v);
+    localStorage.setItem("millie-history-collapsed", String(v));
+  };
   useExtensionLink();
   const convs = useConversations();
   const projects = useProjects();
@@ -77,19 +86,51 @@ export function Sidebar() {
   const close = () => setSidebarOpen(false);
 
   return (
-    <aside className="glass flex h-full w-72 flex-col border-r border-border">
+    <aside className={cn("glass flex h-full flex-col border-r border-border transition-[width] duration-200", collapsed ? "w-16" : "w-72")}>
       <div className="flex items-center gap-2 px-4 pt-4 pb-3">
         <Link to="/chat" search={{}} onClick={close} className="flex items-center gap-2">
           <Logo className="size-8" />
           <span className="font-read text-xl tracking-tight">Millie</span>
         </Link>
-        <WakeIndicator />
+        {!collapsed && <WakeIndicator />}
         <Button variant="ghost" size="icon" className="ml-auto md:hidden" onClick={close} aria-label="Close sidebar">
           <X className="size-4" />
         </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hidden md:inline-flex"
+          onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? "Show chat history" : "Hide chat history"}
+          title={collapsed ? "Show chat history" : "Hide chat history"}
+        >
+          {collapsed ? <ChevronsRight className="size-4" /> : <ChevronsLeft className="size-4" />}
+        </Button>
       </div>
 
-      <div className="px-3">
+      {collapsed && (
+        <div className="flex flex-col items-center gap-2 px-2 pt-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => {
+              navigate({ to: "/chat", search: {} });
+              close();
+            }}
+            aria-label="New chat"
+            title="New chat"
+          >
+            <Plus className="size-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => setCollapsed(false)} aria-label="Show chat history" title="Show chat history">
+            <Search className="size-4" />
+          </Button>
+        </div>
+      )}
+
+      {!collapsed && (
+        <>
+        <div className="px-3">
         <Button
           variant="outline"
           className="w-full justify-start gap-2 bg-transparent"
@@ -164,6 +205,9 @@ export function Sidebar() {
         </nav>
       )}
 
+        </>
+      )}
+
       <div className="space-y-1 border-t border-border p-2">
         <div className="flex items-center gap-1">
           <Button
@@ -183,7 +227,7 @@ export function Sidebar() {
                 {(profile?.display_name || user.email || "?").slice(0, 1).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <span className="truncate">{profile?.display_name || user.email}</span>
+            {!collapsed && <span className="truncate">{profile?.display_name || user.email}</span>}
           </Link>
           <Button variant="ghost" size="icon" aria-label="Settings" onClick={() => setSettingsOpen(true)}>
             <SettingsIcon className="size-4" />
