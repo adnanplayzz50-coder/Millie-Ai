@@ -8,6 +8,13 @@
       "when": 1791648801823,
       "tag": "0000_millie_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791913053329,
+      "tag": "0001_admin_login_attempts",
+      "breakpoints": true
     }
   ]
 }
