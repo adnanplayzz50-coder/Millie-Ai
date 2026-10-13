@@ -17,6 +17,8 @@ import {
 } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Logo } from "@/components/Logo";
+import { FONTS, isDark, type FontKey, type ThemeKey } from "@/lib/theme";
 
 export const Route = createFileRoute("/admin")({
   loader: () => getAdminSession(),
@@ -29,9 +31,50 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
+type AdminAppearance = { theme: ThemeKey; font: FontKey };
+const APPEARANCE_KEY = "millie-admin-appearance";
+
+function loadAppearance(): AdminAppearance {
+  try {
+    const saved = JSON.parse(localStorage.getItem(APPEARANCE_KEY) ?? "null");
+    if (saved && ["light", "dark", "system"].includes(saved.theme) && FONTS.some((f) => f.key === saved.font)) {
+      return saved as AdminAppearance;
+    }
+  } catch {
+    // Ignore a broken saved value and use the defaults.
+  }
+  return { theme: "dark", font: "claude" };
+}
+
 function AdminPage() {
   const { signedIn } = Route.useLoaderData();
-  return <div className="min-h-screen bg-background text-foreground">{signedIn ? <Dashboard /> : <Login />}</div>;
+  const [appearance, setAppearance] = useState<AdminAppearance>(() => loadAppearance());
+
+  // Apply the admin's own look to this page only, and put the site's look back when you leave.
+  useEffect(() => {
+    const root = document.documentElement;
+    const prevFont = root.dataset.font;
+    const prevDark = root.classList.contains("dark");
+    root.dataset.font = appearance.font;
+    root.classList.toggle("dark", isDark(appearance.theme));
+    localStorage.setItem(APPEARANCE_KEY, JSON.stringify(appearance));
+    return () => {
+      if (prevFont) root.dataset.font = prevFont;
+      else delete root.dataset.font;
+      root.classList.toggle("dark", prevDark);
+    };
+  }, [appearance]);
+
+  const family = FONTS.find((f) => f.key === appearance.font)?.family;
+  return (
+    <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: family }}>
+      {signedIn ? (
+        <Dashboard appearance={appearance} setAppearance={setAppearance} />
+      ) : (
+        <Login />
+      )}
+    </div>
+  );
 }
 
 function Login() {
@@ -59,7 +102,10 @@ function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
       <form onSubmit={onSubmit} className="w-full max-w-sm space-y-4 rounded-xl border border-border bg-card p-6">
-        <h1 className="text-xl font-semibold">Millie Admin</h1>
+        <div className="flex flex-col items-center gap-2 pb-2">
+          <Logo className="size-14" />
+          <h1 className="text-xl font-semibold">Millie Admin</h1>
+        </div>
         <Input name="password" type="password" placeholder="Password" autoComplete="current-password" required />
         {error && <p className="text-sm text-destructive">{error}</p>}
         <Button type="submit" className="w-full" disabled={busy}>
@@ -70,17 +116,26 @@ function Login() {
   );
 }
 
-const TABS = ["Overview", "Update log", "Announcement", "Extension", "Accounts"] as const;
+const TABS = ["Overview", "Update log", "Announcement", "Extension", "Accounts", "Customize"] as const;
 type Tab = (typeof TABS)[number];
 
-function Dashboard() {
+function Dashboard({
+  appearance,
+  setAppearance,
+}: {
+  appearance: AdminAppearance;
+  setAppearance: (a: AdminAppearance) => void;
+}) {
   const router = useRouter();
   const signOut = useServerFn(adminSignOut);
   const [tab, setTab] = useState<Tab>("Overview");
   return (
     <div className="mx-auto max-w-5xl p-6">
       <header className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Millie Admin</h1>
+        <div className="flex items-center gap-3">
+          <Logo className="size-8" />
+          <h1 className="text-2xl font-semibold">Millie Admin</h1>
+        </div>
         <Button
           variant="outline"
           onClick={async () => {
@@ -107,6 +162,7 @@ function Dashboard() {
       {tab === "Announcement" && <Setting kind="announcement" />}
       {tab === "Extension" && <Setting kind="extension" />}
       {tab === "Accounts" && <Accounts />}
+      {tab === "Customize" && <Customize appearance={appearance} setAppearance={setAppearance} />}
     </div>
   );
 }
@@ -354,6 +410,56 @@ function Accounts() {
         </div>
       ))}
       <Notice msg={msg} />
+    </div>
+  );
+}
+
+function Customize({
+  appearance,
+  setAppearance,
+}: {
+  appearance: AdminAppearance;
+  setAppearance: (a: AdminAppearance) => void;
+}) {
+  const modes: { key: ThemeKey; label: string }[] = [
+    { key: "light", label: "Light" },
+    { key: "dark", label: "Dark" },
+    { key: "system", label: "System" },
+  ];
+  return (
+    <div className="max-w-2xl space-y-8">
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Mode</h2>
+        <p className="text-sm text-muted-foreground">How this admin page looks. Only you see this setting.</p>
+        <div className="flex gap-2">
+          {modes.map((m) => (
+            <button
+              key={m.key}
+              onClick={() => setAppearance({ ...appearance, theme: m.key })}
+              className={`rounded-full px-4 py-1.5 text-sm ${appearance.theme === m.key ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground"}`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Font</h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {FONTS.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setAppearance({ ...appearance, font: f.key })}
+              className={`rounded-xl border p-4 text-left ${appearance.font === f.key ? "border-primary bg-card" : "border-border bg-card/50"}`}
+            >
+              <p className="text-sm font-medium">{f.label}</p>
+              <p className="text-xs text-muted-foreground">{f.sample}</p>
+              <p className="mt-2 text-lg" style={{ fontFamily: f.family }}>Millie Admin</p>
+            </button>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
