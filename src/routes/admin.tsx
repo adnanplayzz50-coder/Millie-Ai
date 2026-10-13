@@ -90,7 +90,7 @@ function Login() {
     const password = String(new FormData(e.currentTarget).get("password") ?? "");
     try {
       const res = await signIn({ data: { password } });
-      if (res.ok) await router.invalidate();
+      if (res.ok) window.location.reload();
       else setError(res.error);
     } catch {
       setError("Something went wrong. Please try again.");
