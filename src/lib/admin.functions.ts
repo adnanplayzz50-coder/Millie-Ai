@@ -241,3 +241,38 @@ export const adminDeleteAccount = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });
+/* ---------- Chrome extension file (stored in the database, sent as a file) ---------- */
+
+export const adminUploadExtension = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z
+      .object({
+        filename: z.string().min(1).max(120),
+        version: z.string().max(20),
+        base64: z.string().min(1).max(3_000_000),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const supabaseAdmin = await db();
+    const { error } = await (supabaseAdmin as any).from("extension_files").upsert({
+      id: 1,
+      filename: data.filename,
+      version: data.version,
+      content_base64: data.base64,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true as const };
+  });
+/** Public: returns the current extension zip (or null if none uploaded yet). */
+export const getExtensionFile = createServerFn({ method: "GET" }).handler(async () => {
+  const supabaseAdmin = await db();
+  const { data } = await (supabaseAdmin as any)
+    .from("extension_files")
+    .select("filename, version, content_base64")
+    .eq("id", 1)
+    .maybeSingle();
+  return (data as { filename: string; version: string; content_base64: string } | null) ?? null;
+});
