@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/Logo";
+import { ExtensionUpload } from "@/components/admin/ExtensionUpload";
 import { FONTS, isDark, type FontKey, type ThemeKey } from "@/lib/theme";
 
 export const Route = createFileRoute("/admin")({
@@ -90,7 +91,7 @@ function Login() {
     const password = String(new FormData(e.currentTarget).get("password") ?? "");
     try {
       const res = await signIn({ data: { password } });
-      if (res.ok) window.location.reload();
+      if (res.ok) await router.invalidate();
       else setError(res.error);
     } catch {
       setError("Something went wrong. Please try again.");
@@ -160,7 +161,7 @@ function Dashboard({
       {tab === "Overview" && <Overview />}
       {tab === "Update log" && <UpdateLog />}
       {tab === "Announcement" && <Setting kind="announcement" />}
-      {tab === "Extension" && <Setting kind="extension" />}
+      {tab === "Extension" && <ExtensionUpload />}
       {tab === "Accounts" && <Accounts />}
       {tab === "Customize" && <Customize appearance={appearance} setAppearance={setAppearance} />}
     </div>
