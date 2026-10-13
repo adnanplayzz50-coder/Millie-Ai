@@ -3,6 +3,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Markdown } from "./Markdown";
 import { ProjectCard } from "./ProjectCard";
+import { FileCard } from "./FileCard";
+import { FILE_HINT, isFileRequest } from "@/lib/file-gen";
 import { parseReply } from "@/lib/project-parser";
 import { Camera, Globe, Menu, Mic, Monitor, Paperclip, Send, Square, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -94,6 +96,7 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     setMessages(next);
     setBusy(true);
     await supabase.from("messages").insert({ conversation_id: conversationId!, role: "user", content: text, sources: (user.meta ?? {}) as unknown as Json });
+    if (!hint && isFileRequest(text)) hint = FILE_HINT;
     const wire = next.map((m, i) => ({
       role: m.role,
       content: (m.meta?.context ? `${m.content}\n\n${m.meta.context}` : m.content) + (hint && i === next.length - 1 ? `\n\n${hint}` : ""),
@@ -211,7 +214,7 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
           </div>
         ) : (
           <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
-            {messages.map((m) =>
+            {messages.map((m, idx) =>
               m.role === "user" ? (
                 <div key={m.id} className="ml-auto w-fit max-w-[85%] rounded-2xl bg-bubble px-4 py-2.5 text-bubble-foreground">
                   {m.images?.map((src, i) => (
@@ -224,11 +227,14 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
                 <div key={m.id} className="prose-millie animate-fade-up">
                   {(() => {
                     const r = parseReply(m.content);
+                    const prev = messages[idx - 1];
+                    const wantsFile = !r.project && prev?.role === "user" && isFileRequest(prev.content) && !(busy && idx === messages.length - 1) && m.content.length > 40;
                     return (
                       <>
                         {r.before && <Markdown>{r.before}</Markdown>}
                         {r.project && <ProjectCard project={r.project} />}
                         {r.after && <Markdown>{r.after}</Markdown>}
+                        {wantsFile && <FileCard content={m.content} />}
                       </>
                     );
                   })()}
