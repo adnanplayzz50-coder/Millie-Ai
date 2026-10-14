@@ -1,13 +1,11 @@
-import { useNavigate } from "@tanstack/react-router";
+  import { useNavigate } from "@tanstack/react-router";
 import { Brain, Chrome, Monitor, Palette, Smartphone } from "lucide-react";
 import { useApp } from "@/components/app/AppProvider";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useHideExChats } from "@/hooks/use-hide-ex-chats";
-
-/** Where the Chrome extension zip is hosted on the website (public/millie-extension.zip). */
-const EXTENSION_ZIP_URL = "/millie-extension.zip";
+import { downloadExtension } from "@/lib/extension-download";
 
 export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const { user, setCustomizeOpen } = useApp();
@@ -78,20 +76,21 @@ export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenCha
                 title="Chrome extension"
                 subtitle="Chat with Millie from your toolbar, and talk about your screen."
                 action={
-                  <a
-                    href={EXTENSION_ZIP_URL}
-                    download="millie-extension.zip"
-                    onClick={() => {
-                      // Let the download start, then take the user to the install steps.
-                      setTimeout(() => {
-                        onOpenChange(false);
-                        navigate({ to: "/extension-setup" });
-                      }, 1000);
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      // Send the file, then take the user to the install steps.
+                      const ok = await downloadExtension();
+                      if (ok) {
+                        setTimeout(() => {
+                          onOpenChange(false);
+                          navigate({ to: "/extension-setup" });
+                        }, 1000);
+                      }
                     }}
-                    className="inline-flex h-8 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90"
                   >
                     Download
-                  </a>
+                  </Button>
                 }
               />
               <AppRow
