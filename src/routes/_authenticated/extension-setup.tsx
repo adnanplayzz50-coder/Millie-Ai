@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Download, Minus, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { downloadExtension } from "@/lib/extension-download";
 
 export const Route = createFileRoute("/_authenticated/extension-setup")({
   head: () => ({ meta: [{ title: "Install the Millie Chrome extension — Millie AI" }] }),
@@ -70,10 +71,8 @@ function ExtensionSetup() {
           <h1 className="font-read text-3xl tracking-tight">Install the Millie Chrome extension</h1>
           <p className="text-muted-foreground">Five quick steps. Follow them in order. Click a picture to zoom in.</p>
           <div className="pt-2">
-            <Button asChild variant="outline" size="sm">
-              <a href="/millie-extension.zip" download="millie-extension.zip">
-                <Download className="size-4" /> Download again
-              </a>
+            <Button variant="outline" size="sm" onClick={() => downloadExtension()}>
+              <Download className="size-4" /> Download again
             </Button>
           </div>
         </header>
