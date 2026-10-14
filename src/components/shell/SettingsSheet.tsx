@@ -1,4 +1,4 @@
-  import { useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { Brain, Chrome, Monitor, Palette, Smartphone } from "lucide-react";
 import { useApp } from "@/components/app/AppProvider";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
