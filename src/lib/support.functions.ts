@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/admin.functions";
 
 export const SUPPORT_TOPICS = ["General", "Account", "Chat", "Extension", "Billing", "Bug", "Other"] as const;
 export type SupportTopic = (typeof SUPPORT_TOPICS)[number];
