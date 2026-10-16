@@ -11,6 +11,12 @@ export const Route = createFileRoute("/welcome")({
     meta: [
       { title: "Welcome to Millie AI" },
       { name: "description", content: "Millie AI is a calm, friendly AI companion for chat, code, and more." },
+      { property: "og:type", content: "website" },
+      { property: "og:title", content: "Welcome to Millie AI" },
+      { property: "og:description", content: "Millie AI is a calm, friendly AI companion for chat, code, and more." },
+      { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Welcome to Millie AI" },
+      { name: "twitter:description", content: "Millie AI is a calm, friendly AI companion for chat, code, and more." },
     ],
   }),
   component: Welcome,
