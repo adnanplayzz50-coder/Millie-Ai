@@ -73,6 +73,30 @@ export type Database = {
           },
         ]
       }
+      extension_files: {
+        Row: {
+          content_base64: string
+          filename: string
+          id: number
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          content_base64: string
+          filename: string
+          id: number
+          updated_at?: string
+          version?: string
+        }
+        Update: {
+          content_base64?: string
+          filename?: string
+          id?: number
+          updated_at?: string
+          version?: string
+        }
+        Relationships: []
+      }
       memory_facts: {
         Row: {
           created_at: string
@@ -227,6 +251,51 @@ export type Database = {
           instructions?: string
           name?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      update_log: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          log_date: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: string
+          log_date: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          log_date?: string
+          sort_order?: number
+          title?: string
         }
         Relationships: []
       }
