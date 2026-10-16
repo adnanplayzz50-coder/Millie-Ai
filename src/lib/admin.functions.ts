@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestHeader, setResponseHeader } from "@tanstack/react-start/server";
+// Loaded lazily so this server-only module never enters the browser bundle.
+const getRequestHeader = async (n: string) => (await import("@tanstack/react-start/server")).getRequestHeader(n);
+const setResponseHeader = async (n: string, v: string) => (await import("@tanstack/react-start/server")).setResponseHeader(n, v);
 import { z } from "zod";
 
 const COOKIE = "millie_admin";
@@ -24,8 +26,8 @@ function safeEqual(a: string, b: string) {
   return r === 0;
 }
 
-function readCookie(name: string) {
-  const raw = getRequestHeader("cookie") ?? "";
+async function readCookie(name: string) {
+  const raw = (await getRequestHeader("cookie")) ?? "";
   for (const part of raw.split(";")) {
     const [k, ...v] = part.trim().split("=");
     if (k === name) return decodeURIComponent(v.join("="));
@@ -34,7 +36,7 @@ function readCookie(name: string) {
 }
 
 async function isValidSession(secret: string) {
-  const value = readCookie(COOKIE);
+  const value = await readCookie(COOKIE);
   if (!value) return false;
   const [exp, sig] = value.split(".");
   if (!exp || !sig || Number(exp) < Date.now()) return false;
@@ -69,8 +71,8 @@ export const adminSignIn = createServerFn({ method: "POST" })
     }
     const supabaseAdmin = await db();
     const ip =
-      getRequestHeader("cf-connecting-ip") ??
-      getRequestHeader("x-forwarded-for")?.split(",")[0]?.trim() ??
+      (await getRequestHeader("cf-connecting-ip")) ??
+      (await getRequestHeader("x-forwarded-for"))?.split(",")[0]?.trim() ??
       "unknown";
     const visitor = await hmac(secret, `visitor:${ip}`);
     const since = new Date(Date.now() - WINDOW_MS).toISOString();
@@ -91,7 +93,7 @@ export const adminSignIn = createServerFn({ method: "POST" })
     await supabaseAdmin.from("admin_login_attempts").delete().eq("visitor_hash", visitor);
     const exp = Date.now() + SESSION_MS;
     const token = `${exp}.${await hmac(secret, `admin:${exp}`)}`;
-    setResponseHeader(
+    await setResponseHeader(
       "Set-Cookie",
       `${COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${SESSION_MS / 1000}`,
     );
@@ -99,7 +101,7 @@ export const adminSignIn = createServerFn({ method: "POST" })
   });
 
 export const adminSignOut = createServerFn({ method: "POST" }).handler(async () => {
-  setResponseHeader("Set-Cookie", `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`);
+  await setResponseHeader("Set-Cookie", `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`);
   return { ok: true };
 });
 
