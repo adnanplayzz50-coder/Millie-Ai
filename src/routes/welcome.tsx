@@ -95,8 +95,8 @@ function Welcome() {
 
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-6 py-10 text-center">
-          <img src="/simpalicity-logo-white.png" alt="Simpalicity logo" className="h-14 w-auto" />
-          <p className="font-medium">MillieAI is owned by Simpalicity</p>
+        <p className="font-read text-2xl font-medium">Simpalicity</p>
+        <p className="font-medium">MillieAI is owned by Simpalicity</p>
           <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Simpalicity. All rights reserved.</p>
         </div>
       </footer>
