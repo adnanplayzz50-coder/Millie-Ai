@@ -1,113 +1,31 @@
+/**
+ * Callable from anywhere in the app. Every handler loads the server-only
+ * admin module itself, so nothing cookie-related ever reaches the browser.
+ */
 import { createServerFn } from "@tanstack/react-start";
-// Loaded lazily so this server-only module never enters the browser bundle.
-const getRequestHeader = async (n: string) => (await import("@tanstack/react-start/server")).getRequestHeader(n);
-const setResponseHeader = async (n: string, v: string) => (await import("@tanstack/react-start/server")).setResponseHeader(n, v);
 import { z } from "zod";
 
-const COOKIE = "millie_admin";
-const SESSION_MS = 8 * 60 * 60 * 1000;
-const WINDOW_MS = 15 * 60 * 1000;
-const MAX_ATTEMPTS = 5;
-
-const enc = new TextEncoder();
-const toHex = (buf: ArrayBuffer) =>
-  [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
-
-async function hmac(secret: string, msg: string) {
-  const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  return toHex(await crypto.subtle.sign("HMAC", key, enc.encode(msg)));
-}
-
-// Constant-time compare of equal-length hex digests.
-function safeEqual(a: string, b: string) {
-  if (a.length !== b.length) return false;
-  let r = 0;
-  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return r === 0;
-}
-
-async function readCookie(name: string) {
-  const raw = (await getRequestHeader("cookie")) ?? "";
-  for (const part of raw.split(";")) {
-    const [k, ...v] = part.trim().split("=");
-    if (k === name) return decodeURIComponent(v.join("="));
-  }
-  return null;
-}
-
-async function isValidSession(secret: string) {
-  const value = await readCookie(COOKIE);
-  if (!value) return false;
-  const [exp, sig] = value.split(".");
-  if (!exp || !sig || Number(exp) < Date.now()) return false;
-  return safeEqual(sig, await hmac(secret, `admin:${exp}`));
-}
-
-/** Every admin action calls this first. Throws if the admin isn't signed in. */
-export async function requireAdmin() {
-  const secret = process.env["ADMIN_SESSION_SECRET"];
-  if (!secret || !(await isValidSession(secret))) throw new Error("Not signed in as admin.");
-}
-
-async function db() {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin;
-}
-
 export const getAdminSession = createServerFn({ method: "GET" }).handler(async () => {
-  const secret = process.env["ADMIN_SESSION_SECRET"];
-  const configured = !!process.env["ADMIN_PASSWORD"];
-  if (!secret) return { signedIn: false, configured };
-  return { signedIn: await isValidSession(secret), configured };
+  const { readAdminSessionState } = await import("./admin.server");
+  return readAdminSessionState();
 });
 
 export const adminSignIn = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ password: z.string().max(500) }).parse(d))
   .handler(async ({ data }) => {
-    const expected = process.env["ADMIN_PASSWORD"];
-    const secret = process.env["ADMIN_SESSION_SECRET"];
-    if (!expected || !secret) {
-      return { ok: false as const, error: "Admin password isn't set up yet. Add ADMIN_PASSWORD and ADMIN_SESSION_SECRET in Project Settings → Secrets." };
-    }
-    const supabaseAdmin = await db();
-    const ip =
-      (await getRequestHeader("cf-connecting-ip")) ??
-      (await getRequestHeader("x-forwarded-for"))?.split(",")[0]?.trim() ??
-      "unknown";
-    const visitor = await hmac(secret, `visitor:${ip}`);
-    const since = new Date(Date.now() - WINDOW_MS).toISOString();
-
-    const { count } = await supabaseAdmin
-      .from("admin_login_attempts")
-      .select("id", { count: "exact", head: true })
-      .eq("visitor_hash", visitor)
-      .gte("created_at", since);
-    if ((count ?? 0) >= MAX_ATTEMPTS) {
-      return { ok: false as const, error: "Too many wrong passwords. Please wait 15 minutes and try again." };
-    }
-    const match = safeEqual(await hmac(secret, data.password), await hmac(secret, expected));
-    if (!match) {
-      await supabaseAdmin.from("admin_login_attempts").insert({ visitor_hash: visitor });
-      return { ok: false as const, error: "Wrong password." };
-    }
-    await supabaseAdmin.from("admin_login_attempts").delete().eq("visitor_hash", visitor);
-    const exp = Date.now() + SESSION_MS;
-    const token = `${exp}.${await hmac(secret, `admin:${exp}`)}`;
-    await setResponseHeader(
-      "Set-Cookie",
-      `${COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${SESSION_MS / 1000}`,
-    );
-    return { ok: true as const };
+    const { attemptSignIn } = await import("./admin.server");
+    return attemptSignIn(data.password);
   });
 
 export const adminSignOut = createServerFn({ method: "POST" }).handler(async () => {
-  await setResponseHeader("Set-Cookie", `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`);
-  return { ok: true };
+  const { endAdminSession } = await import("./admin.server");
+  return endAdminSession();
 });
 
 /* ---------- Overview ---------- */
 
 export const adminOverview = createServerFn({ method: "POST" }).handler(async () => {
+  const { requireAdmin, db } = await import("./admin.server");
   await requireAdmin();
   const supabaseAdmin = await db();
   const startOfDay = new Date();
@@ -133,9 +51,11 @@ const UpdateInput = z.object({
 });
 
 export const adminListUpdates = createServerFn({ method: "POST" }).handler(async () => {
+  const { requireAdmin, db } = await import("./admin.server");
   await requireAdmin();
   const supabaseAdmin = await db();
-  const { data, error } = await (supabaseAdmin as any).from("update_log")
+  const { data, error } = await (supabaseAdmin as any)
+    .from("update_log")
     .select("*")
     .order("log_date", { ascending: false })
     .order("sort_order", { ascending: true });
@@ -146,6 +66,7 @@ export const adminListUpdates = createServerFn({ method: "POST" }).handler(async
 export const adminSaveUpdate = createServerFn({ method: "POST" })
   .inputValidator((d) => UpdateInput.parse(d))
   .handler(async ({ data }) => {
+    const { requireAdmin, db } = await import("./admin.server");
     await requireAdmin();
     const supabaseAdmin = await db();
     const { id, ...row } = data;
@@ -159,6 +80,7 @@ export const adminSaveUpdate = createServerFn({ method: "POST" })
 export const adminDeleteUpdate = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
+    const { requireAdmin, db } = await import("./admin.server");
     await requireAdmin();
     const supabaseAdmin = await db();
     const { error } = await (supabaseAdmin as any).from("update_log").delete().eq("id", data.id);
@@ -169,6 +91,7 @@ export const adminDeleteUpdate = createServerFn({ method: "POST" })
 /* ---------- Site settings: announcement and extension info ---------- */
 
 export const adminGetSettings = createServerFn({ method: "POST" }).handler(async () => {
+  const { requireAdmin, db } = await import("./admin.server");
   await requireAdmin();
   const supabaseAdmin = await db();
   const { data, error } = await (supabaseAdmin as any).from("site_settings").select("key, value");
@@ -181,9 +104,11 @@ export const adminSaveSetting = createServerFn({ method: "POST" })
     z.object({ key: z.enum(["announcement", "extension"]), value: z.record(z.string(), z.any()) }).parse(d),
   )
   .handler(async ({ data }) => {
+    const { requireAdmin, db } = await import("./admin.server");
     await requireAdmin();
     const supabaseAdmin = await db();
-    const { error } = await (supabaseAdmin as any).from("site_settings")
+    const { error } = await (supabaseAdmin as any)
+      .from("site_settings")
       .upsert({ key: data.key, value: data.value, updated_at: new Date().toISOString() });
     if (error) throw new Error(error.message);
     return { ok: true as const };
@@ -192,6 +117,7 @@ export const adminSaveSetting = createServerFn({ method: "POST" })
 /* ---------- Accounts ---------- */
 
 export const adminListAccounts = createServerFn({ method: "POST" }).handler(async () => {
+  const { requireAdmin, db } = await import("./admin.server");
   await requireAdmin();
   const supabaseAdmin = await db();
   const { data: list, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
@@ -218,6 +144,7 @@ export const adminUpdateAccount = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    const { requireAdmin, db } = await import("./admin.server");
     await requireAdmin();
     const supabaseAdmin = await db();
     if (data.display_name !== undefined) {
@@ -237,12 +164,14 @@ export const adminUpdateAccount = createServerFn({ method: "POST" })
 export const adminDeleteAccount = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid(), confirm: z.literal("DELETE") }).parse(d))
   .handler(async ({ data }) => {
+    const { requireAdmin, db } = await import("./admin.server");
     await requireAdmin();
     const supabaseAdmin = await db();
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.id);
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });
+
 /* ---------- Chrome extension file (stored in the database, sent as a file) ---------- */
 
 export const adminUploadExtension = createServerFn({ method: "POST" })
@@ -256,6 +185,7 @@ export const adminUploadExtension = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    const { requireAdmin, db } = await import("./admin.server");
     await requireAdmin();
     const supabaseAdmin = await db();
     const { error } = await (supabaseAdmin as any).from("extension_files").upsert({
@@ -268,8 +198,10 @@ export const adminUploadExtension = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });
+
 /** Public: returns the current extension zip (or null if none uploaded yet). */
 export const getExtensionFile = createServerFn({ method: "GET" }).handler(async () => {
+  const { db } = await import("./admin.server");
   const supabaseAdmin = await db();
   const { data } = await (supabaseAdmin as any)
     .from("extension_files")
