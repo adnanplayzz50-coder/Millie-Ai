@@ -32,6 +32,7 @@ export const submitSupport = createServerFn({ method: "POST" })
 /* ---------- Admin inbox (used by the /admin/support page) ---------- */
 
 export const adminListSupport = createServerFn({ method: "POST" }).handler(async () => {
+  const { requireAdmin } = await import("./admin.server");
   await requireAdmin();
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
@@ -46,8 +47,8 @@ export const adminListSupport = createServerFn({ method: "POST" }).handler(async
 export const adminSetResolved = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid(), resolved: z.boolean() }).parse(d))
   .handler(async ({ data }) => {
+    const { requireAdmin } = await import("./admin.server");
     await requireAdmin();
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("support_questions")
       .update({ resolved: data.resolved })
