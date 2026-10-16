@@ -42,7 +42,7 @@ async function isValidSession(secret: string) {
 }
 
 /** Every admin action calls this first. Throws if the admin isn't signed in. */
-async function requireAdmin() {
+export async function requireAdmin() {
   const secret = process.env["ADMIN_SESSION_SECRET"];
   if (!secret || !(await isValidSession(secret))) throw new Error("Not signed in as admin.");
 }
