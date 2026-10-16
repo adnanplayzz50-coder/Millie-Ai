@@ -49,6 +49,7 @@ export const adminSetResolved = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { requireAdmin } = await import("./admin.server");
     await requireAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("support_questions")
       .update({ resolved: data.resolved })
