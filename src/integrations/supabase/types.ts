@@ -272,6 +272,36 @@ export type Database = {
         }
         Relationships: []
       }
+      support_questions: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string | null
+          resolved: boolean
+          topic: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name?: string | null
+          resolved?: boolean
+          topic?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string | null
+          resolved?: boolean
+          topic?: string
+        }
+        Relationships: []
+      }
       update_log: {
         Row: {
           body: string

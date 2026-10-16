@@ -11,6 +11,12 @@ export const Route = createFileRoute("/welcome")({
     meta: [
       { title: "Welcome to Millie AI" },
       { name: "description", content: "Millie AI is a calm, friendly AI companion for chat, code, and more." },
+      { property: "og:type", content: "website" },
+      { property: "og:title", content: "Welcome to Millie AI" },
+      { property: "og:description", content: "Millie AI is a calm, friendly AI companion for chat, code, and more." },
+      { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Welcome to Millie AI" },
+      { name: "twitter:description", content: "Millie AI is a calm, friendly AI companion for chat, code, and more." },
     ],
   }),
   component: Welcome,
@@ -89,8 +95,8 @@ function Welcome() {
 
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-6 py-10 text-center">
-          <img src="/simpalicity-logo-white.png" alt="Simpalicity logo" className="h-14 w-auto" />
-          <p className="font-medium">MillieAI is owned by Simpalicity</p>
+        <p className="font-read text-2xl font-medium">Simpalicity</p>
+        <p className="font-medium">MillieAI is owned by Simpalicity</p>
           <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Simpalicity. All rights reserved.</p>
         </div>
       </footer>

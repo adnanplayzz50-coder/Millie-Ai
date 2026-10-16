@@ -13,12 +13,14 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedCallRouteImport } from './routes/_authenticated/call'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedExtensionSetupRouteImport } from './routes/_authenticated/extension-setup'
 import { Route as AuthenticatedMemoryRouteImport } from './routes/_authenticated/memory'
 import { Route as AuthenticatedSidebarRouteImport } from './routes/_authenticated/sidebar'
+import { Route as AdminSupportRouteImport } from './routes/admin.support'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedCIdRouteImport } from './routes/_authenticated/c.$id'
 import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
@@ -41,6 +43,11 @@ const AdminRoute = AdminRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WelcomeRoute = WelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
@@ -74,6 +81,11 @@ const AuthenticatedSidebarRoute = AuthenticatedSidebarRouteImport.update({
   path: '/sidebar',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AdminSupportRoute = AdminSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => AdminRoute,
+} as any)
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
@@ -98,14 +110,16 @@ const AuthenticatedProjectsIdRoute = AuthenticatedProjectsIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
+  '/welcome': typeof WelcomeRoute
   '/account': typeof AuthenticatedAccountRoute
   '/call': typeof AuthenticatedCallRoute
   '/chat': typeof AuthenticatedChatRoute
   '/extension-setup': typeof AuthenticatedExtensionSetupRoute
   '/memory': typeof AuthenticatedMemoryRoute
   '/sidebar': typeof AuthenticatedSidebarRoute
+  '/admin/support': typeof AdminSupportRoute
   '/api/chat': typeof ApiChatRoute
   '/c/$id': typeof AuthenticatedCIdRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
@@ -113,14 +127,16 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
+  '/welcome': typeof WelcomeRoute
   '/account': typeof AuthenticatedAccountRoute
   '/call': typeof AuthenticatedCallRoute
   '/chat': typeof AuthenticatedChatRoute
   '/extension-setup': typeof AuthenticatedExtensionSetupRoute
   '/memory': typeof AuthenticatedMemoryRoute
   '/sidebar': typeof AuthenticatedSidebarRoute
+  '/admin/support': typeof AdminSupportRoute
   '/api/chat': typeof ApiChatRoute
   '/c/$id': typeof AuthenticatedCIdRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
@@ -130,14 +146,16 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
+  '/welcome': typeof WelcomeRoute
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/call': typeof AuthenticatedCallRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/extension-setup': typeof AuthenticatedExtensionSetupRoute
   '/_authenticated/memory': typeof AuthenticatedMemoryRoute
   '/_authenticated/sidebar': typeof AuthenticatedSidebarRoute
+  '/admin/support': typeof AdminSupportRoute
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/c/$id': typeof AuthenticatedCIdRoute
   '/_authenticated/projects/$id': typeof AuthenticatedProjectsIdRoute
@@ -149,12 +167,14 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/welcome'
     | '/account'
     | '/call'
     | '/chat'
     | '/extension-setup'
     | '/memory'
     | '/sidebar'
+    | '/admin/support'
     | '/api/chat'
     | '/c/$id'
     | '/projects/$id'
@@ -164,12 +184,14 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/welcome'
     | '/account'
     | '/call'
     | '/chat'
     | '/extension-setup'
     | '/memory'
     | '/sidebar'
+    | '/admin/support'
     | '/api/chat'
     | '/c/$id'
     | '/projects/$id'
@@ -180,12 +202,14 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/admin'
     | '/auth'
+    | '/welcome'
     | '/_authenticated/account'
     | '/_authenticated/call'
     | '/_authenticated/chat'
     | '/_authenticated/extension-setup'
     | '/_authenticated/memory'
     | '/_authenticated/sidebar'
+    | '/admin/support'
     | '/api/chat'
     | '/_authenticated/c/$id'
     | '/_authenticated/projects/$id'
@@ -195,8 +219,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
+  WelcomeRoute: typeof WelcomeRoute
   ApiChatRoute: typeof ApiChatRoute
 }
 
@@ -228,6 +253,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/welcome': {
+      id: '/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof WelcomeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/account': {
@@ -271,6 +303,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/sidebar'
       preLoaderRoute: typeof AuthenticatedSidebarRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/admin/support': {
+      id: '/admin/support'
+      path: '/support'
+      fullPath: '/admin/support'
+      preLoaderRoute: typeof AdminSupportRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/api/chat': {
       id: '/api/chat'
@@ -330,11 +369,22 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface AdminRouteChildren {
+  AdminSupportRoute: typeof AdminSupportRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminSupportRoute: AdminSupportRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
+  WelcomeRoute: WelcomeRoute,
   ApiChatRoute: ApiChatRoute,
 }
 export const routeTree = rootRouteImport
