@@ -15,7 +15,7 @@ export const DEFAULT_SETTINGS: Settings = {
   font: "claude",
   palette: "violet",
   custom_color: null,
-  theme: "dark",
+  theme: "system",
   wake_word: false,
   read_aloud: false,
 };
@@ -69,4 +69,4 @@ export function cachedSettings(): Settings {
 }
 
 /** Inline script that runs before paint to avoid a theme flash. */
-export const THEME_BOOT_SCRIPT = `(function(){try{var s=JSON.parse(localStorage.getItem('${LS_KEY}')||'{}');var r=document.documentElement;r.dataset.font=s.font||'claude';r.dataset.palette=s.palette||'violet';var t=s.theme||'dark';var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);if(d)r.classList.add('dark');if(s.custom_color)r.style.setProperty('--primary',s.custom_color);}catch(e){document.documentElement.classList.add('dark')}})();`;
+export const THEME_BOOT_SCRIPT = `(function(){try{var s=JSON.parse(localStorage.getItem('${LS_KEY}')||'{}');var r=document.documentElement;r.dataset.font=s.font||'claude';r.dataset.palette=s.palette||'violet';var t=s.theme||'system';var d=t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);if(d)r.classList.add('dark');if(s.custom_color)r.style.setProperty('--primary',s.custom_color);}catch(e){if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.classList.add('dark')}})();`;

@@ -44,7 +44,7 @@ function loadAppearance(): AdminAppearance {
   } catch {
     // Ignore a broken saved value and use the defaults.
   }
-  return { theme: "dark", font: "claude" };
+  return { theme: "system", font: "claude" };
 }
 
 function AdminPage() {
