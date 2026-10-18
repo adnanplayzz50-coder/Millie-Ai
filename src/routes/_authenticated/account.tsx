@@ -32,8 +32,8 @@ export const Route = createFileRoute("/_authenticated/account")({
         <div className="flex gap-2"><Input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="New password" /><Button onClick={async () => { const { error } = await supabase.auth.updateUser({ password: pw }); setMsg(error?.message ?? "Password updated."); }}>Update</Button></div>
         {msg && <p className="text-sm text-muted-foreground">{msg}</p>}
         <div className="flex gap-2">
-          <Button variant="outline" onClick={async () => { await supabase.auth.signOut(); navigate({ to: "/auth" }); }}>Sign out</Button>
-          <Button variant="destructive" onClick={async () => { if (prompt('Type DELETE to permanently delete your account') !== "DELETE") return; await del(); await supabase.auth.signOut(); navigate({ to: "/auth" }); }}>Delete account</Button>
+          <Button variant="outline" onClick={async () => { await supabase.auth.signOut({ scope: "local" }); navigate({ to: "/auth" }); }}>Sign out</Button>
+          <Button variant="destructive" onClick={async () => { if (prompt('Type DELETE to permanently delete your account') !== "DELETE") return; await del(); await supabase.auth.signOut({ scope: "local" }); navigate({ to: "/auth" }); }}>Delete account</Button>
         </div>
       </div>
     );

@@ -34,34 +34,34 @@ export type Database = {
       }
       conversations: {
         Row: {
-          source: string
           created_at: string
           id: string
           mode: string
           pinned: boolean
           project_id: string | null
+          source: string
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
-          source?: string
           created_at?: string
           id?: string
           mode?: string
           pinned?: boolean
           project_id?: string | null
+          source?: string
           title?: string
           updated_at?: string
           user_id?: string
         }
         Update: {
-          source?: string
           created_at?: string
           id?: string
           mode?: string
           pinned?: boolean
           project_id?: string | null
+          source?: string
           title?: string
           updated_at?: string
           user_id?: string
@@ -75,6 +75,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      extension_files: {
+        Row: {
+          content_base64: string
+          filename: string
+          id: number
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          content_base64: string
+          filename: string
+          id: number
+          updated_at?: string
+          version?: string
+        }
+        Update: {
+          content_base64?: string
+          filename?: string
+          id?: number
+          updated_at?: string
+          version?: string
+        }
+        Relationships: []
       }
       memory_facts: {
         Row: {
@@ -230,6 +254,81 @@ export type Database = {
           instructions?: string
           name?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      support_questions: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string | null
+          resolved: boolean
+          topic: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name?: string | null
+          resolved?: boolean
+          topic?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string | null
+          resolved?: boolean
+          topic?: string
+        }
+        Relationships: []
+      }
+      update_log: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          log_date: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: string
+          log_date: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          log_date?: string
+          sort_order?: number
+          title?: string
         }
         Relationships: []
       }
