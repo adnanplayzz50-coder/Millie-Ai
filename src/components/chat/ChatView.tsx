@@ -35,10 +35,7 @@ function Thinking() {
   }, []);
   return (
     <div className="flex items-center gap-2">
-      <span className="relative flex size-3">
-        <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-60" />
-        <span className="relative inline-flex size-3 rounded-full bg-primary" />
-      </span>
+      <span className="inline-flex size-3.5 animate-pulse rounded-full border-2 border-primary" />
       <p className="shimmer-text font-read text-lg">{WORDS[i]}…</p>
     </div>
   );
@@ -60,6 +57,22 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
   const invalidate = useInvalidate();
   const memorize = useServerFn(extractMemories);
   const endRef = useRef<HTMLDivElement>(null);
+  const [justDone, setJustDone] = useState(false);
+  const wasBusy = useRef(false);
+
+  useEffect(() => {
+    if (busy) {
+      wasBusy.current = true;
+      setJustDone(false);
+      return;
+    }
+    if (wasBusy.current) {
+      wasBusy.current = false;
+      setJustDone(true);
+      const t = setTimeout(() => setJustDone(false), 1500);
+      return () => clearTimeout(t);
+    }
+  }, [busy]);
 
   useEffect(() => {
     setMode(initialMode);
@@ -197,7 +210,16 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
 
   return (
     <div className={cn("flex h-full flex-col", mode === "code" && "mode-code")}>
-      <header className="flex items-center gap-2 border-b border-border px-4 py-2">
+      <header className="relative flex items-center gap-2 border-b border-border px-4 py-2">
+        <span className="absolute right-4 top-1/2 -translate-y-1/2" aria-label={busy ? "Thinking" : justDone ? "Done" : "Idle"}>
+          {busy ? (
+            <span className="inline-flex size-4 animate-pulse rounded-full border-2 border-primary" />
+          ) : justDone ? (
+            <span className="inline-flex size-4 rounded-full bg-primary" />
+          ) : (
+            <span className="inline-flex size-4 rounded-full border-2 border-primary/60" />
+          )}
+        </span>
         <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
           <Menu className="size-4" />
         </Button>
@@ -217,7 +239,7 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
       <div className="flex-1 overflow-y-auto">
         {!messages.length ? (
           <div className="flex h-full flex-col items-center justify-center gap-4 animate-fade-up">
-            <Logo className="size-20" />
+            <Logo className="size-28" />
             <p className={cn("text-2xl", mode === "code" ? "font-mono" : "font-read")}>Hello how may I help ?</p>
           </div>
         ) : (
@@ -316,13 +338,13 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
-  variant="ghost"
-  size="icon"
-  onClick={() => setWeb(!web)}
-  aria-label="Search the web"
-  title="Search the web with Google. Only runs when this is on."
-  className={cn(web && "text-primary")}
->
+            variant="ghost"
+            size="icon"
+            onClick={() => setWeb(!web)}
+            aria-label="Search the web"
+            title="Search the web with Google. Only runs when this is on."
+            className={cn(web && "text-primary")}
+          >
             <Globe className="size-4" />
           </Button>
           <textarea
