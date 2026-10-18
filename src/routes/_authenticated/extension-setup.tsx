@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Download, Minus, Plus, X } from "lucide-react";
+import { Download, Minus, Plus, TriangleAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { downloadExtension } from "@/lib/extension-download";
 
@@ -100,6 +100,14 @@ function ExtensionSetup() {
             </li>
           ))}
         </ol>
+
+        <div className="flex items-start gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 p-4">
+          <TriangleAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
+          <p className="leading-relaxed">
+            <span className="font-semibold text-destructive">Warning:</span> Deleting the extension file from your device deletes
+            the extension from Chrome.
+          </p>
+        </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6 text-sm text-muted-foreground">
           <span>Once it's loaded, click the Millie icon in Chrome's toolbar to open it.</span>
