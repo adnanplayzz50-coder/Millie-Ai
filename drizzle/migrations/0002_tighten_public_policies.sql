@@ -1,0 +1,10 @@
+DROP POLICY IF EXISTS "Anyone can send a question" ON public.support_questions;
+REVOKE INSERT ON public.support_questions FROM anon, authenticated;
+DROP POLICY IF EXISTS "Anyone can read settings" ON public.site_settings;
+REVOKE SELECT ON public.site_settings FROM anon, authenticated;
+GRANT ALL ON public.support_questions TO service_role;
+GRANT ALL ON public.site_settings TO service_role;
+GRANT ALL ON public.update_log TO service_role;
+DROP POLICY IF EXISTS "Anyone can read updates" ON public.update_log;
+REVOKE SELECT ON public.update_log FROM anon;
+CREATE POLICY "Signed-in users can read updates" ON public.update_log FOR SELECT TO authenticated USING (auth.uid() IS NOT NULL);
