@@ -39,6 +39,7 @@ export type Database = {
           mode: string
           pinned: boolean
           project_id: string | null
+          source: string
           title: string
           updated_at: string
           user_id: string
@@ -49,6 +50,7 @@ export type Database = {
           mode?: string
           pinned?: boolean
           project_id?: string | null
+          source?: string
           title?: string
           updated_at?: string
           user_id?: string
@@ -59,6 +61,7 @@ export type Database = {
           mode?: string
           pinned?: boolean
           project_id?: string | null
+          source?: string
           title?: string
           updated_at?: string
           user_id?: string
