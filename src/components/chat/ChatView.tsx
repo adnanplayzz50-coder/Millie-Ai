@@ -74,6 +74,30 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     }
   }, [busy]);
 
+  // The website's tab icon: hollow when idle, flashing while thinking, full when done.
+  useEffect(() => {
+    let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.head.appendChild(link);
+    }
+    const icon = link;
+    const show = (filled: boolean) => {
+      icon.href = filled ? "/favicon-filled.png" : "/favicon-hollow.png";
+    };
+    if (busy) {
+      let on = false;
+      show(false);
+      const t = setInterval(() => {
+        on = !on;
+        show(on);
+      }, 450);
+      return () => clearInterval(t);
+    }
+    show(justDone);
+  }, [busy, justDone]);
+
   useEffect(() => {
     setMode(initialMode);
   }, [initialMode]);
@@ -211,15 +235,6 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
   return (
     <div className={cn("flex h-full flex-col", mode === "code" && "mode-code")}>
       <header className="relative flex items-center gap-2 border-b border-border px-4 py-2">
-        <span className="absolute right-4 top-1/2 -translate-y-1/2" aria-label={busy ? "Thinking" : justDone ? "Done" : "Idle"}>
-          {busy ? (
-            <span className="inline-flex size-4 animate-pulse rounded-full border-2 border-primary" />
-          ) : justDone ? (
-            <span className="inline-flex size-4 rounded-full bg-primary" />
-          ) : (
-            <span className="inline-flex size-4 rounded-full border-2 border-primary/60" />
-          )}
-        </span>
         <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
           <Menu className="size-4" />
         </Button>
@@ -338,13 +353,13 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setWeb(!web)}
-            aria-label="Search the web"
-            title="Search the web with Google. Only runs when this is on."
-            className={cn(web && "text-primary")}
-          >
+  variant="ghost"
+  size="icon"
+  onClick={() => setWeb(!web)}
+  aria-label="Search the web"
+  title="Search the web with Google. Only runs when this is on."
+  className={cn(web && "text-primary")}
+>
             <Globe className="size-4" />
           </Button>
           <textarea
