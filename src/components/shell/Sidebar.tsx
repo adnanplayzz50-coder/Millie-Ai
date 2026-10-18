@@ -60,19 +60,18 @@ export function Sidebar() {
   const projects = useProjects();
   const navigate = useNavigate();
 
-  // Chats: pinned first, then anything used in the last 7 days.
-  // Ex-Chats: everything older than that, unless pinned.
+  // Chats: chats made on the website (pinned first).
+  // Ex-Chats: chats you had with the Millie extension.
   const { recent, older } = useMemo(() => {
     const list = (convs.data ?? []).filter((c) => c.title.toLowerCase().includes(q.toLowerCase()));
-    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const isRecent = (c: ConversationRow) => new Date(c.updated_at).getTime() >= cutoff;
+    const isExt = (c: ConversationRow) => (c as ConversationRow & { source?: string }).source === "extension";
     const sorted = (xs: ConversationRow[]) => [...xs.filter((c) => c.pinned), ...xs.filter((c) => !c.pinned)];
     return {
-      recent: sorted(list.filter((c) => c.pinned || isRecent(c))),
-      older: sorted(list.filter((c) => !c.pinned && !isRecent(c))),
+      recent: sorted(list.filter((c) => !isExt(c))),
+      older: sorted(list.filter((c) => isExt(c))),
     };
   }, [convs.data, q]);
-  // With Ex-Chats hidden, the Ex-Chats tab disappears and older chats are not listed.
+  // With Ex-Chats hidden, the Ex-Chats tab disappears.
   const tabs: { key: Tab; label: string }[] = [
     { key: "chats", label: "Chats" },
     ...(hideEx ? [] : [{ key: "older" as const, label: "Ex-Chats" }]),
@@ -87,10 +86,10 @@ export function Sidebar() {
 
   return (
     <aside className={cn("glass flex h-full flex-col border-r border-border transition-[width] duration-200", collapsed ? "w-16" : "w-72")}>
-      <div className="flex items-center gap-2 px-4 pt-4 pb-3">
+      <div className={cn("flex items-center gap-2 px-4 pt-4 pb-3", collapsed && "flex-col gap-3 px-0")}>
         <Link to="/chat" search={{}} onClick={close} className="flex items-center gap-2">
-          <Logo className="size-8" />
-          <span className="font-read text-xl tracking-tight">Millie</span>
+          <Logo className="size-11" />
+          {!collapsed && <span className="font-read text-2xl tracking-tight">Millie</span>}
         </Link>
         {!collapsed && <WakeIndicator />}
         <Button variant="ghost" size="icon" className="ml-auto md:hidden" onClick={close} aria-label="Close sidebar">
@@ -176,7 +175,7 @@ export function Sidebar() {
             ))}
             {!convs.isLoading && !visible.length && (
               <p className="px-3 py-6 text-center text-xs text-muted-foreground">
-                {tab === "older" ? "No older chats" : "No chats yet"}
+                {tab === "older" ? "No extension chats yet" : "No chats yet"}
               </p>
             )}
           </nav>
@@ -209,7 +208,7 @@ export function Sidebar() {
       )}
 
       <div className="space-y-1 border-t border-border p-2">
-        <div className="flex items-center gap-1">
+        <div className={cn("flex items-center gap-1", collapsed && "flex-col")}>
           <Button
             variant="ghost"
             size="icon"
@@ -219,8 +218,8 @@ export function Sidebar() {
             {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
           </Button>
         </div>
-        <div className="flex items-center gap-1 rounded-md pr-1 hover:bg-accent">
-          <Link to="/account" onClick={close} className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-sm">
+        <div className={cn("flex items-center gap-1 rounded-md pr-1 hover:bg-accent", collapsed && "flex-col pr-0")}>
+          <Link to="/account" onClick={close} className={cn("flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-sm", collapsed && "flex-none justify-center px-0")}>
             <Avatar className="size-7">
               <AvatarImage src={profile?.avatar_url ?? undefined} />
               <AvatarFallback className="bg-accent text-xs">
