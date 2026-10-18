@@ -33,7 +33,15 @@ function Thinking() {
     const t = setInterval(() => setI((x) => (x + 1) % WORDS.length), 2200);
     return () => clearInterval(t);
   }, []);
-  return <p className="shimmer-text font-read text-lg">{WORDS[i]}…</p>;
+  return (
+    <div className="flex items-center gap-2">
+      <span className="relative flex size-3">
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-60" />
+        <span className="relative inline-flex size-3 rounded-full bg-primary" />
+      </span>
+      <p className="shimmer-text font-read text-lg">{WORDS[i]}…</p>
+    </div>
+  );
 }
 
 export function ChatView({ conversationId, mode: initialMode, projectId }: { conversationId?: string; mode: Mode; projectId?: string | null }) {
@@ -331,9 +339,16 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
               const f = [...e.clipboardData.files];
               if (f.length) setAtts([...atts, ...(await filesToAttachments(f))]);
             }}
+            onInput={(e) => {
+              const el = e.currentTarget;
+              const max = Math.round(window.innerHeight * 0.6);
+              el.style.height = "auto";
+              el.style.height = Math.min(el.scrollHeight, max) + "px";
+              el.style.overflowY = el.scrollHeight > max ? "auto" : "hidden";
+            }}
             rows={1}
             placeholder={mode === "code" ? "Ask C0DE to build something…" : "Message Millie…"}
-            className="max-h-48 flex-1 resize-none bg-transparent px-2 py-2 outline-none"
+            className="flex-1 resize-none overflow-hidden bg-transparent px-2 py-2 leading-6 outline-none"
           />
           <Button variant="ghost" size="icon" onClick={dictate} aria-label="Dictate">
             <Mic className="size-4" />
