@@ -64,7 +64,7 @@ export function Sidebar() {
   // Ex-Chats: chats you had with the Millie extension.
   const { recent, older } = useMemo(() => {
     const list = (convs.data ?? []).filter((c) => c.title.toLowerCase().includes(q.toLowerCase()));
-    const isExt = (c: ConversationRow) => (c as ConversationRow & { source?: string }).source === "extension";
+    const isExt = (c: ConversationRow) => c.source === "extension";
     const sorted = (xs: ConversationRow[]) => [...xs.filter((c) => c.pinned), ...xs.filter((c) => !c.pinned)];
     return {
       recent: sorted(list.filter((c) => !isExt(c))),
@@ -88,7 +88,7 @@ export function Sidebar() {
     <aside className={cn("glass flex h-full flex-col border-r border-border transition-[width] duration-200", collapsed ? "w-16" : "w-72")}>
       <div className={cn("flex items-center gap-2 px-4 pt-4 pb-3", collapsed && "flex-col gap-3 px-0")}>
         <Link to="/chat" search={{}} onClick={close} className="flex items-center gap-2">
-          <Logo className="size-11" />
+          <Logo className="size-14" />
           {!collapsed && <span className="font-read text-2xl tracking-tight">Millie</span>}
         </Link>
         {!collapsed && <WakeIndicator />}
@@ -129,81 +129,80 @@ export function Sidebar() {
 
       {!collapsed && (
         <>
-        <div className="px-3">
-        <Button
-          variant="outline"
-          className="w-full justify-start gap-2 bg-transparent"
-          onClick={() => {
-            navigate({ to: "/chat", search: {} });
-            close();
-          }}
-        >
-          <Plus className="size-4" /> New chat
-          <kbd className="ml-auto text-[10px] text-muted-foreground">Ctrl K</kbd>
-        </Button>
-      </div>
-
-      <div className="mt-3 flex gap-1 px-3 text-sm">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={cn(
-              "flex-1 rounded-md px-2 py-1.5 transition-colors",
-              tab === t.key ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {tab !== "projects" ? (
-        <>
-          <div className="relative mx-3 mt-3">
-            <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search chats"
-              className="h-8 border-border/60 bg-transparent pl-8 text-sm"
-            />
-          </div>
-          <nav className="mt-2 flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
-            {visible.map((c) => (
-              <ConversationItem key={c.id} c={c} onNavigate={close} />
-            ))}
-            {!convs.isLoading && !visible.length && (
-              <p className="px-3 py-6 text-center text-xs text-muted-foreground">
-                {tab === "older" ? "No extension chats yet" : "No chats yet"}
-              </p>
-            )}
-          </nav>
-        </>
-      ) : (
-        <nav className="mt-3 flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
-          <Link
-            to="/projects"
-            onClick={close}
-            className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-primary hover:bg-accent"
-          >
-            <Plus className="size-4" /> Manage projects
-          </Link>
-          {(projects.data ?? []).map((p) => (
-            <Link
-              key={p.id}
-              to="/projects/$id"
-              params={{ id: p.id }}
-              onClick={close}
-              className="flex items-center gap-2 truncate rounded-md px-3 py-2 text-sm hover:bg-accent [&.active]:bg-accent"
+          <div className="px-3">
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2 bg-transparent"
+              onClick={() => {
+                navigate({ to: "/chat", search: {} });
+                close();
+              }}
             >
-              <FolderKanban className="size-4 shrink-0 text-muted-foreground" />
-              <span className="truncate">{p.name}</span>
-            </Link>
-          ))}
-        </nav>
-      )}
+              <Plus className="size-4" /> New chat
+              <kbd className="ml-auto text-[10px] text-muted-foreground">Ctrl K</kbd>
+            </Button>
+          </div>
 
+          <div className="mt-3 flex gap-1 px-3 text-sm">
+            {tabs.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={cn(
+                  "flex-1 rounded-md px-2 py-1.5 transition-colors",
+                  tab === t.key ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {tab !== "projects" ? (
+            <>
+              <div className="relative mx-3 mt-3">
+                <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Search chats"
+                  className="h-8 border-border/60 bg-transparent pl-8 text-sm"
+                />
+              </div>
+              <nav className="mt-2 flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
+                {visible.map((c) => (
+                  <ConversationItem key={c.id} c={c} onNavigate={close} />
+                ))}
+                {!convs.isLoading && !visible.length && (
+                  <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+                    {tab === "older" ? "No extension chats yet" : "No chats yet"}
+                  </p>
+                )}
+              </nav>
+            </>
+          ) : (
+            <nav className="mt-3 flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
+              <Link
+                to="/projects"
+                onClick={close}
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-primary hover:bg-accent"
+              >
+                <Plus className="size-4" /> Manage projects
+              </Link>
+              {(projects.data ?? []).map((p) => (
+                <Link
+                  key={p.id}
+                  to="/projects/$id"
+                  params={{ id: p.id }}
+                  onClick={close}
+                  className="flex items-center gap-2 truncate rounded-md px-3 py-2 text-sm hover:bg-accent [&.active]:bg-accent"
+                >
+                  <FolderKanban className="size-4 shrink-0 text-muted-foreground" />
+                  <span className="truncate">{p.name}</span>
+                </Link>
+              ))}
+            </nav>
+          )}
         </>
       )}
 
@@ -219,7 +218,11 @@ export function Sidebar() {
           </Button>
         </div>
         <div className={cn("flex items-center gap-1 rounded-md pr-1 hover:bg-accent", collapsed && "flex-col pr-0")}>
-          <Link to="/account" onClick={close} className={cn("flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-sm", collapsed && "flex-none justify-center px-0")}>
+          <Link
+            to="/account"
+            onClick={close}
+            className={cn("flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-sm", collapsed && "flex-none justify-center px-0")}
+          >
             <Avatar className="size-7">
               <AvatarImage src={profile?.avatar_url ?? undefined} />
               <AvatarFallback className="bg-accent text-xs">
