@@ -41,6 +41,38 @@ function Thinking() {
   );
 }
 
+const GREETINGS = [
+  "Hello how may I help ?",
+  "What's on your mind?",
+  "Ready when you are.",
+  "What shall we explore today?",
+  "How can I help today?",
+  "What would you like to work on?",
+  "Ask me anything.",
+  "What are we building today?",
+  "Need a hand with something?",
+  "What's the plan for today?",
+  "Where should we start?",
+  "What can I do for you?",
+  "Got a question? I'm listening.",
+  "What's on the agenda?",
+  "Let's get something done.",
+  "What do you want to figure out?",
+  "Tell me what you need.",
+  "What's next?",
+  "Ready to help. What's up?",
+  "Curious about something?",
+  "What shall I help you with?",
+  "What's the idea?",
+  "Let's think it through together.",
+  "What are you working on?",
+  "How can I make your day easier?",
+];
+
+function randomGreeting() {
+  return GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+}
+
 export function ChatView({ conversationId, mode: initialMode, projectId }: { conversationId?: string; mode: Mode; projectId?: string | null }) {
   const { settings, setSidebarOpen } = useApp();
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -49,6 +81,7 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
   const [atts, setAtts] = useState<Attachment[]>([]);
   const [web, setWeb] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [greeting] = useState(randomGreeting);
   const [callOpen, setCallOpen] = useState(false);
   const [regionId, setRegionId] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
@@ -255,7 +288,7 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
         {!messages.length ? (
           <div className="flex h-full flex-col items-center justify-center gap-4 animate-fade-up">
             <Logo className="size-28" />
-            <p className={cn("text-2xl", mode === "code" ? "font-mono" : "font-read")}>Hello how may I help ?</p>
+            <p className={cn("text-2xl", mode === "code" ? "font-mono" : "font-read")}>{greeting}</p>
           </div>
         ) : (
           <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
