@@ -9,6 +9,8 @@ export interface ConversationRow {
   pinned: boolean;
   project_id: string | null;
   updated_at: string;
+  /** "web" for website chats, "extension" for chats made in the Chrome extension. */
+  source?: string | null;
 }
 
 export function useConversations() {
@@ -17,7 +19,7 @@ export function useConversations() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("conversations")
-        .select("id, title, mode, pinned, project_id, updated_at")
+        .select("id, title, mode, pinned, project_id, updated_at, source")
         .order("updated_at", { ascending: false });
       if (error) throw error;
       return data as ConversationRow[];
