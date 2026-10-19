@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as TutcladeRouteImport } from './routes/tutclade'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedCallRouteImport } from './routes/_authenticated/call'
@@ -44,6 +45,11 @@ const AdminRoute = AdminRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TutcladeRoute = TutcladeRouteImport.update({
+  id: '/tutclade',
+  path: '/tutclade',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WelcomeRoute = WelcomeRouteImport.update({
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
+  '/tutclade': typeof TutcladeRoute
   '/welcome': typeof WelcomeRoute
   '/account': typeof AuthenticatedAccountRoute
   '/call': typeof AuthenticatedCallRoute
@@ -136,6 +143,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
+  '/tutclade': typeof TutcladeRoute
   '/welcome': typeof WelcomeRoute
   '/account': typeof AuthenticatedAccountRoute
   '/call': typeof AuthenticatedCallRoute
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
+  '/tutclade': typeof TutcladeRoute
   '/welcome': typeof WelcomeRoute
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/call': typeof AuthenticatedCallRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/tutclade'
     | '/welcome'
     | '/account'
     | '/call'
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/tutclade'
     | '/welcome'
     | '/account'
     | '/call'
@@ -213,6 +224,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/admin'
     | '/auth'
+    | '/tutclade'
     | '/welcome'
     | '/_authenticated/account'
     | '/_authenticated/call'
@@ -233,6 +245,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
+  TutcladeRoute: typeof TutcladeRoute
   WelcomeRoute: typeof WelcomeRoute
   ApiChatRoute: typeof ApiChatRoute
 }
@@ -265,6 +278,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tutclade': {
+      id: '/tutclade'
+      path: '/tutclade'
+      fullPath: '/tutclade'
+      preLoaderRoute: typeof TutcladeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/welcome': {
@@ -405,6 +425,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
+  TutcladeRoute: TutcladeRoute,
   WelcomeRoute: WelcomeRoute,
   ApiChatRoute: ApiChatRoute,
 }
