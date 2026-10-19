@@ -18,6 +18,7 @@ import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedCallRouteImport } from './routes/_authenticated/call'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedExtensionSetupRouteImport } from './routes/_authenticated/extension-setup'
+import { Route as AuthenticatedFilesRouteImport } from './routes/_authenticated/files'
 import { Route as AuthenticatedMemoryRouteImport } from './routes/_authenticated/memory'
 import { Route as AuthenticatedSidebarRouteImport } from './routes/_authenticated/sidebar'
 import { Route as AdminSupportRouteImport } from './routes/admin.support'
@@ -71,6 +72,11 @@ const AuthenticatedExtensionSetupRoute =
     path: '/extension-setup',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedFilesRoute = AuthenticatedFilesRouteImport.update({
+  id: '/files',
+  path: '/files',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMemoryRoute = AuthenticatedMemoryRouteImport.update({
   id: '/memory',
   path: '/memory',
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/call': typeof AuthenticatedCallRoute
   '/chat': typeof AuthenticatedChatRoute
   '/extension-setup': typeof AuthenticatedExtensionSetupRoute
+  '/files': typeof AuthenticatedFilesRoute
   '/memory': typeof AuthenticatedMemoryRoute
   '/sidebar': typeof AuthenticatedSidebarRoute
   '/admin/support': typeof AdminSupportRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/call': typeof AuthenticatedCallRoute
   '/chat': typeof AuthenticatedChatRoute
   '/extension-setup': typeof AuthenticatedExtensionSetupRoute
+  '/files': typeof AuthenticatedFilesRoute
   '/memory': typeof AuthenticatedMemoryRoute
   '/sidebar': typeof AuthenticatedSidebarRoute
   '/admin/support': typeof AdminSupportRoute
@@ -153,6 +161,7 @@ export interface FileRoutesById {
   '/_authenticated/call': typeof AuthenticatedCallRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/extension-setup': typeof AuthenticatedExtensionSetupRoute
+  '/_authenticated/files': typeof AuthenticatedFilesRoute
   '/_authenticated/memory': typeof AuthenticatedMemoryRoute
   '/_authenticated/sidebar': typeof AuthenticatedSidebarRoute
   '/admin/support': typeof AdminSupportRoute
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
     | '/call'
     | '/chat'
     | '/extension-setup'
+    | '/files'
     | '/memory'
     | '/sidebar'
     | '/admin/support'
@@ -189,6 +199,7 @@ export interface FileRouteTypes {
     | '/call'
     | '/chat'
     | '/extension-setup'
+    | '/files'
     | '/memory'
     | '/sidebar'
     | '/admin/support'
@@ -207,6 +218,7 @@ export interface FileRouteTypes {
     | '/_authenticated/call'
     | '/_authenticated/chat'
     | '/_authenticated/extension-setup'
+    | '/_authenticated/files'
     | '/_authenticated/memory'
     | '/_authenticated/sidebar'
     | '/admin/support'
@@ -290,6 +302,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedExtensionSetupRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/files': {
+      id: '/_authenticated/files'
+      path: '/files'
+      fullPath: '/files'
+      preLoaderRoute: typeof AuthenticatedFilesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/memory': {
       id: '/_authenticated/memory'
       path: '/memory'
@@ -347,6 +366,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCallRoute: typeof AuthenticatedCallRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedExtensionSetupRoute: typeof AuthenticatedExtensionSetupRoute
+  AuthenticatedFilesRoute: typeof AuthenticatedFilesRoute
   AuthenticatedMemoryRoute: typeof AuthenticatedMemoryRoute
   AuthenticatedSidebarRoute: typeof AuthenticatedSidebarRoute
   AuthenticatedCIdRoute: typeof AuthenticatedCIdRoute
@@ -359,6 +379,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCallRoute: AuthenticatedCallRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedExtensionSetupRoute: AuthenticatedExtensionSetupRoute,
+  AuthenticatedFilesRoute: AuthenticatedFilesRoute,
   AuthenticatedMemoryRoute: AuthenticatedMemoryRoute,
   AuthenticatedSidebarRoute: AuthenticatedSidebarRoute,
   AuthenticatedCIdRoute: AuthenticatedCIdRoute,
