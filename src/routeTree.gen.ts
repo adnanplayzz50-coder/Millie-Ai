@@ -13,11 +13,13 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as TutcladeRouteImport } from './routes/tutclade'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedCallRouteImport } from './routes/_authenticated/call'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedExtensionSetupRouteImport } from './routes/_authenticated/extension-setup'
+import { Route as AuthenticatedFilesRouteImport } from './routes/_authenticated/files'
 import { Route as AuthenticatedMemoryRouteImport } from './routes/_authenticated/memory'
 import { Route as AuthenticatedSidebarRouteImport } from './routes/_authenticated/sidebar'
 import { Route as AdminSupportRouteImport } from './routes/admin.support'
@@ -43,6 +45,11 @@ const AdminRoute = AdminRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TutcladeRoute = TutcladeRouteImport.update({
+  id: '/tutclade',
+  path: '/tutclade',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WelcomeRoute = WelcomeRouteImport.update({
@@ -71,6 +78,11 @@ const AuthenticatedExtensionSetupRoute =
     path: '/extension-setup',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedFilesRoute = AuthenticatedFilesRouteImport.update({
+  id: '/files',
+  path: '/files',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMemoryRoute = AuthenticatedMemoryRouteImport.update({
   id: '/memory',
   path: '/memory',
@@ -112,11 +124,13 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
+  '/tutclade': typeof TutcladeRoute
   '/welcome': typeof WelcomeRoute
   '/account': typeof AuthenticatedAccountRoute
   '/call': typeof AuthenticatedCallRoute
   '/chat': typeof AuthenticatedChatRoute
   '/extension-setup': typeof AuthenticatedExtensionSetupRoute
+  '/files': typeof AuthenticatedFilesRoute
   '/memory': typeof AuthenticatedMemoryRoute
   '/sidebar': typeof AuthenticatedSidebarRoute
   '/admin/support': typeof AdminSupportRoute
@@ -129,11 +143,13 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
+  '/tutclade': typeof TutcladeRoute
   '/welcome': typeof WelcomeRoute
   '/account': typeof AuthenticatedAccountRoute
   '/call': typeof AuthenticatedCallRoute
   '/chat': typeof AuthenticatedChatRoute
   '/extension-setup': typeof AuthenticatedExtensionSetupRoute
+  '/files': typeof AuthenticatedFilesRoute
   '/memory': typeof AuthenticatedMemoryRoute
   '/sidebar': typeof AuthenticatedSidebarRoute
   '/admin/support': typeof AdminSupportRoute
@@ -148,11 +164,13 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
+  '/tutclade': typeof TutcladeRoute
   '/welcome': typeof WelcomeRoute
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/call': typeof AuthenticatedCallRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/extension-setup': typeof AuthenticatedExtensionSetupRoute
+  '/_authenticated/files': typeof AuthenticatedFilesRoute
   '/_authenticated/memory': typeof AuthenticatedMemoryRoute
   '/_authenticated/sidebar': typeof AuthenticatedSidebarRoute
   '/admin/support': typeof AdminSupportRoute
@@ -167,11 +185,13 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/tutclade'
     | '/welcome'
     | '/account'
     | '/call'
     | '/chat'
     | '/extension-setup'
+    | '/files'
     | '/memory'
     | '/sidebar'
     | '/admin/support'
@@ -184,11 +204,13 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/tutclade'
     | '/welcome'
     | '/account'
     | '/call'
     | '/chat'
     | '/extension-setup'
+    | '/files'
     | '/memory'
     | '/sidebar'
     | '/admin/support'
@@ -202,11 +224,13 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/admin'
     | '/auth'
+    | '/tutclade'
     | '/welcome'
     | '/_authenticated/account'
     | '/_authenticated/call'
     | '/_authenticated/chat'
     | '/_authenticated/extension-setup'
+    | '/_authenticated/files'
     | '/_authenticated/memory'
     | '/_authenticated/sidebar'
     | '/admin/support'
@@ -221,6 +245,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
+  TutcladeRoute: typeof TutcladeRoute
   WelcomeRoute: typeof WelcomeRoute
   ApiChatRoute: typeof ApiChatRoute
 }
@@ -253,6 +278,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tutclade': {
+      id: '/tutclade'
+      path: '/tutclade'
+      fullPath: '/tutclade'
+      preLoaderRoute: typeof TutcladeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/welcome': {
@@ -288,6 +320,13 @@ declare module '@tanstack/react-router' {
       path: '/extension-setup'
       fullPath: '/extension-setup'
       preLoaderRoute: typeof AuthenticatedExtensionSetupRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/files': {
+      id: '/_authenticated/files'
+      path: '/files'
+      fullPath: '/files'
+      preLoaderRoute: typeof AuthenticatedFilesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/memory': {
@@ -347,6 +386,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCallRoute: typeof AuthenticatedCallRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedExtensionSetupRoute: typeof AuthenticatedExtensionSetupRoute
+  AuthenticatedFilesRoute: typeof AuthenticatedFilesRoute
   AuthenticatedMemoryRoute: typeof AuthenticatedMemoryRoute
   AuthenticatedSidebarRoute: typeof AuthenticatedSidebarRoute
   AuthenticatedCIdRoute: typeof AuthenticatedCIdRoute
@@ -359,6 +399,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCallRoute: AuthenticatedCallRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedExtensionSetupRoute: AuthenticatedExtensionSetupRoute,
+  AuthenticatedFilesRoute: AuthenticatedFilesRoute,
   AuthenticatedMemoryRoute: AuthenticatedMemoryRoute,
   AuthenticatedSidebarRoute: AuthenticatedSidebarRoute,
   AuthenticatedCIdRoute: AuthenticatedCIdRoute,
@@ -384,6 +425,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
+  TutcladeRoute: TutcladeRoute,
   WelcomeRoute: WelcomeRoute,
   ApiChatRoute: ApiChatRoute,
 }
