@@ -13,8 +13,16 @@ interface Body {
 const GROQ_MODEL = "openai/gpt-oss-120b";
 const GEMINI_MODEL = "gemini-3-flash-preview";
 
-const IMAGE_REQUEST =
-  /\b(generate|create|make|draw|paint|design|render|produce)\b[\s\S]{0,40}\b(image|picture|photo|drawing|painting|illustration|logo|wallpaper|artwork|art)\b/i;
+const PICTURE_WORD =
+  /\b(pictures?|images?|photos?|photographs?|drawings?|paintings?|illustrations?|logos?|wallpapers?|artworks?|sketch(?:es)?|art)\b/i;
+
+/** The words after the picture word become the prompt, e.g. "picture of a cat in space" -> "of a cat in space". */
+function picturePrompt(text: string): string | null {
+  const m = PICTURE_WORD.exec(text);
+  if (!m) return null;
+  const after = text.slice(m.index + m[0].length).replace(/^[\s,:-]+/, "").trim();
+  return after.length >= 3 ? after : text;
+}
 
 /** Free image generation via Cloudflare Workers AI (Flux Schnell). Returns a data URI. */
 async function makeImage(prompt: string): Promise<string> {
@@ -221,10 +229,11 @@ export async function handleChat(request: Request): Promise<Response> {
     async start(controller) {
       const emit: Emit = (type, value) => controller.enqueue(enc.encode(JSON.stringify({ type, value }) + "\n"));
       try {
-        if (!hasImages && body.mode === "chat" && IMAGE_REQUEST.test(last.content)) {
+        const imagePrompt = !hasImages && body.mode === "chat" ? picturePrompt(last.content) : null;
+        if (imagePrompt) {
           emit("route", "image");
-          const src = await makeImage(last.content);
-          const alt = last.content.replace(/[\[\]]/g, "").slice(0, 80);
+          const src = await makeImage(imagePrompt);
+          const alt = imagePrompt.replace(/[\[\]]/g, "").slice(0, 80);
           emit("text", `Here's your picture:\n\n![${alt}](${src})`);
         } else if (hasImages || search) {
           const key = process.env["GEMINI_API_KEY"];
