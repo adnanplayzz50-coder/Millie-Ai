@@ -8,7 +8,33 @@ interface Body {
   mode: "chat" | "code";
   webSearch?: boolean;
   projectId?: string | null;
+  codeModel?: string;
 }
+
+/** Coding-only models for C0DE. Each reads its own secret key. "auto" uses the default model. */
+const CODE_MODELS: Record<string, { label: string; url: string; keyName: string; model: string; route: string }> = {
+  "qwen-coder": {
+    label: "Qwen3 Coder",
+    url: "https://openrouter.ai/api/v1/chat/completions",
+    keyName: "OPENROUTER_API_KEY",
+    model: "qwen/qwen3-coder:free",
+    route: "qwen-coder",
+  },
+  codestral: {
+    label: "Codestral",
+    url: "https://codestral.mistral.ai/v1/chat/completions",
+    keyName: "CODESTRAL_API_KEY",
+    model: "codestral-latest",
+    route: "codestral",
+  },
+  deepseek: {
+    label: "DeepSeek",
+    url: "https://api.deepseek.com/chat/completions",
+    keyName: "DEEPSEEK_API_KEY",
+    model: "deepseek-chat",
+    route: "deepseek",
+  },
+};
 
 const GROQ_MODEL = "openai/gpt-oss-120b";
 const GEMINI_MODEL = "gemini-3-flash-preview";
@@ -171,15 +197,30 @@ async function streamGroq(opts: {
   note?: string;
 }) {
   const { system, messages, body, emit, signal, note } = opts;
-  const key = process.env["GROQ_API_KEY"];
-  if (!key) throw new Error(keyError("GROQ_API_KEY", "missing key"));
+  // A coding-only model, if the user picked one in C0DE.
+  const coder =
+    body.mode === "code" && body.codeModel && body.codeModel !== "auto" ? CODE_MODELS[body.codeModel] : undefined;
+  // Otherwise Lovable's built-in AI is used when its key is set, and Groq is the fallback.
+  const lovableKey = process.env["LOVABLE_API_KEY"];
+  const key = coder ? process.env[coder.keyName] : lovableKey || process.env["GROQ_API_KEY"];
+  if (!key) throw new Error(keyError(coder ? coder.keyName : "LOVABLE_API_KEY", "missing key"));
   if (note) emit("text", note);
-  emit("route", "groq");
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  emit("route", coder ? coder.route : lovableKey ? "lovable" : "groq");
+  const url = coder
+    ? coder.url
+    : lovableKey
+      ? "https://ai.gateway.lovable.dev/v1/chat/completions"
+      : "https://api.groq.com/openai/v1/chat/completions";
+  const model = coder
+    ? coder.model
+    : lovableKey
+      ? process.env["LOVABLE_MODEL"] || "google/gemini-2.5-flash"
+      : GROQ_MODEL;
+  const res = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
     body: JSON.stringify({
-      model: GROQ_MODEL,
+      model,
       stream: true,
       temperature: body.mode === "code" ? 0.3 : 0.7,
       max_tokens: body.mode === "code" ? 8000 : 4000,
