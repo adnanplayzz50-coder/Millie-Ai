@@ -12,6 +12,8 @@ export interface ChatRequest {
   mode: Mode;
   webSearch?: boolean;
   projectId?: string | null;
+  /** C0DE only: which coding model to use. "auto" is the default. */
+  codeModel?: string;
 }
 
 /** Streams a reply from the server. Events are newline-delimited JSON. */
