@@ -81,6 +81,7 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
   const [atts, setAtts] = useState<Attachment[]>([]);
   const [web, setWeb] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [codeModel, setCodeModel] = useState("auto");
   const [greeting] = useState(randomGreeting);
   const [callOpen, setCallOpen] = useState(false);
   const [regionId, setRegionId] = useState<string | null>(null);
@@ -185,7 +186,7 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     const aid = uid();
     abort.current = new AbortController();
     try {
-      await streamChat({ messages: wire, mode, webSearch, projectId }, {
+      await streamChat({ messages: wire, mode, webSearch, projectId, codeModel }, {
         onText: (t) => {
           reply += t;
           setMessages([...next, { id: aid, role: "assistant", content: reply }]);
@@ -395,6 +396,19 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
 >
             <Globe className="size-4" />
           </Button>
+          {mode === "code" && (
+            <select
+              value={codeModel}
+              onChange={(e) => setCodeModel(e.target.value)}
+              aria-label="Coding model"
+              className="max-w-[9rem] rounded-md border border-border bg-background px-2 py-1 font-mono text-xs"
+            >
+              <option value="auto">Auto</option>
+              <option value="qwen-coder">Qwen3 Coder</option>
+              <option value="codestral">Codestral</option>
+              <option value="deepseek">DeepSeek</option>
+            </select>
+          )}
           <textarea
             autoFocus
             value={input}
