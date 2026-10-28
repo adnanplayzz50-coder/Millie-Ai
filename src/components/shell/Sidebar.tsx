@@ -208,30 +208,28 @@ export function Sidebar() {
         </>
       )}
 
-      <div className="space-y-1 border-t border-border p-2">
-        <Link
-          to="/files"
-          onClick={close}
-          title="Files"
-          aria-label="Files"
-          className={cn(
-            "flex items-center justify-center rounded-md px-3 py-2 text-muted-foreground hover:bg-accent hover:text-foreground",
-            collapsed && "px-0",
-          )}
-        >
-          <FileText className="size-4" />
-        </Link>
-        <div className={cn("flex items-center gap-1", collapsed && "flex-col items-center justify-center gap-3")}>
+      <div className="border-t border-border p-3">
+        <div className={cn("flex items-center justify-center gap-8", collapsed && "flex-col gap-3")}>
+          <Link
+            to="/files"
+            onClick={close}
+            title="Files"
+            aria-label="Files"
+            className="flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <FileText className="size-4" />
+          </Link>
           <Button
             variant="ghost"
             size="icon"
             aria-label="Toggle light and dark"
+            title="Toggle light and dark"
             onClick={() => updateSettings({ theme: dark ? "light" : "dark" })}
           >
             {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
           </Button>
         </div>
-        <div className={cn("flex items-center gap-1 rounded-md pr-1 hover:bg-accent", collapsed && "flex-col items-center justify-center gap-3 rounded-md pr-0")}>
+        <div className={cn("mt-2 flex items-center gap-1 rounded-md pr-1 hover:bg-accent", collapsed && "flex-col items-center justify-center gap-3 rounded-md pr-0")}>
           <Link to="/account" onClick={close} className={cn("flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-sm", collapsed && "flex-none justify-center px-0")}>
             <Avatar className="size-7">
               <AvatarImage src={profile?.avatar_url ?? undefined} />
