@@ -12,25 +12,52 @@ const QUESTIONS = [
   { key: "ai_use", label: "What will you use Millie for?", ph: "Writing, coding side projects, studying…" },
 ] as const;
 
-/** Optional first-run questions. Skip is always available. */
+/** Optional first-run questions. Closing or skipping must never trap the user. */
 export function OnboardingDialog() {
   const { profile, user, refreshProfile } = useApp();
   const [vals, setVals] = useState({ hobbies: "", interests: "", ai_use: "" });
   const [busy, setBusy] = useState(false);
-  const open = !!profile && !profile.onboarded;
+  const [dismissed, setDismissed] = useState(false);
+  const open = !!profile && !profile.onboarded && !dismissed;
 
   const finish = async (save: boolean) => {
+    if (busy) return;
+
+    // Close immediately so a slow or failed database request cannot trap the user.
+    setDismissed(true);
     setBusy(true);
-    await supabase
-      .from("profiles")
-      .update({ onboarded: true, ...(save ? vals : {}) })
-      .eq("id", user.id);
-    setBusy(false);
-    refreshProfile();
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ onboarded: true, ...(save ? vals : {}) })
+        .eq("id", user.id);
+
+      if (error) {
+        console.error("Could not save onboarding preferences:", error.message);
+        if (save) {
+          window.alert("Millie couldn't save your answers. You can continue using Millie; please try again later.");
+        }
+      }
+
+      await refreshProfile();
+    } catch (error) {
+      console.error("Could not finish onboarding:", error);
+      if (save) {
+        window.alert("Millie couldn't save your answers. You can continue using Millie; please try again later.");
+      }
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && finish(false)}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) void finish(false);
+      }}
+    >
       <DialogContent className="sm:max-w-lg">
         <div className="flex flex-col items-center text-center">
           <Logo className="size-12" />
@@ -51,11 +78,11 @@ export function OnboardingDialog() {
           ))}
         </div>
         <div className="flex justify-between gap-2">
-          <Button variant="ghost" onClick={() => finish(false)} disabled={busy}>
+          <Button type="button" variant="ghost" onClick={() => void finish(false)} disabled={busy}>
             Skip
           </Button>
-          <Button onClick={() => finish(true)} disabled={busy}>
-            Save & start
+          <Button type="button" onClick={() => void finish(true)} disabled={busy}>
+            {busy ? "Saving…" : "Save & start"}
           </Button>
         </div>
       </DialogContent>
