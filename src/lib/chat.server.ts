@@ -187,6 +187,67 @@ async function* sseLines(res: Response) {
 
 type Emit = (type: string, value: unknown) => void;
 
+/** Streams ordinary Millie chat through Gemini. Groq is used only as a fallback when Gemini is rate-limited. */
+async function streamGeminiText(opts: {
+  system: string;
+  messages: Msg[];
+  body: Body;
+  emit: Emit;
+  signal: AbortSignal;
+}) {
+  const { system, messages, body, emit, signal } = opts;
+  const key = process.env["GEMINI_API_KEY"];
+  if (!key) throw new Error(keyError("GEMINI_API_KEY", "missing key"));
+
+  emit("route", "gemini");
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-goog-api-key": key },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents: geminiContents(messages),
+        generationConfig: { temperature: 0.7, maxOutputTokens: 4000 },
+      }),
+      signal,
+    },
+  );
+
+  if (res.status === 429) {
+    await res.text().catch(() => "");
+    await streamGroq({
+      system,
+      messages,
+      body,
+      emit,
+      signal,
+      note: "(Gemini is busy or its free quota is temporarily used up, so I'm answering with the backup model.)\\n\\n",
+    });
+    return;
+  }
+
+  if (!res.ok) {
+    const t = await res.text();
+    console.error("Gemini chat error", res.status, t.slice(0, 500));
+    if (res.status === 401 || res.status === 403) {
+      throw new Error(keyError("GEMINI_API_KEY", "key rejected"));
+    }
+    if (res.status === 400 && /API key/i.test(t)) {
+      throw new Error(keyError("GEMINI_API_KEY", "invalid key"));
+    }
+    throw new Error(`Gemini request failed (${res.status}). Check the GEMINI_API_KEY secret in Vercel Environment Variables.`);
+  }
+
+  for await (const data of sseLines(res)) {
+    const ev = JSON.parse(data);
+    const candidate = ev.candidates?.[0];
+    for (const part of candidate?.content?.parts ?? []) {
+      if (part.text) opts.emit("text", part.text);
+    }
+  }
+}
+
 /** Streams a text-only answer from Groq. Used for normal chat, and as the fallback when Gemini is busy. */
 async function streamGroq(opts: {
   system: string;
@@ -200,22 +261,14 @@ async function streamGroq(opts: {
   // A coding-only model, if the user picked one in C0DE.
   const coder =
     body.mode === "code" && body.codeModel && body.codeModel !== "auto" ? CODE_MODELS[body.codeModel] : undefined;
-  // Otherwise Lovable's built-in AI is used when its key is set, and Groq is the fallback.
-  const lovableKey = process.env["LOVABLE_API_KEY"];
-  const key = coder ? process.env[coder.keyName] : lovableKey || process.env["GROQ_API_KEY"];
-  if (!key) throw new Error(keyError(coder ? coder.keyName : "LOVABLE_API_KEY", "missing key"));
+  // This function is for explicitly selected C0DE models or the Groq fallback.
+  // Normal Millie chat uses Gemini directly via streamGeminiText below.
+  const key = coder ? process.env[coder.keyName] : process.env["GROQ_API_KEY"];
+  if (!key) throw new Error(keyError(coder ? coder.keyName : "GROQ_API_KEY", "missing key"));
   if (note) emit("text", note);
-  emit("route", coder ? coder.route : lovableKey ? "lovable" : "groq");
-  const url = coder
-    ? coder.url
-    : lovableKey
-      ? "https://ai.gateway.lovable.dev/v1/chat/completions"
-      : "https://api.groq.com/openai/v1/chat/completions";
-  const model = coder
-    ? coder.model
-    : lovableKey
-      ? process.env["LOVABLE_MODEL"] || "google/gemini-2.5-flash"
-      : GROQ_MODEL;
+  emit("route", coder ? coder.route : "groq");
+  const url = coder ? coder.url : "https://api.groq.com/openai/v1/chat/completions";
+  const model = coder ? coder.model : GROQ_MODEL;
   const res = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
@@ -328,6 +381,8 @@ export async function handleChat(request: Request): Promise<Response> {
             }
           }
           if (sources.size) emit("sources", [...sources].map(([uri, title]) => ({ uri, title })));
+        } else if (body.mode === "chat") {
+          await streamGeminiText({ system, messages, body, emit, signal: request.signal });
         } else {
           await streamGroq({ system, messages, body, emit, signal: request.signal });
         }
