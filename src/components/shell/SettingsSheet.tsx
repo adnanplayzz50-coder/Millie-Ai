@@ -94,7 +94,13 @@ export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenCha
                     <input value={ollamaUrl} onChange={(e) => saveAiSettings("local", ollamaModel, e.target.value)} placeholder="http://localhost:11434" className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm" />
                   </label>
                   <p className="text-xs text-muted-foreground">
-                    Local mode requires Ollama running on this same computer, with the selected model downloaded. The first request may need browser access to localhost.
+                    Not set up yet? Download Millie's Windows setup script. Run it in PowerShell; it installs Ollama if needed, downloads the model, and configures browser access. Windows requires you to approve and run the script yourself.
+                  </p>
+                  <Button className="w-full" onClick={() => { window.location.href = "/setup-millie-local.ps1"; }}>
+                    Set up Local AI on this PC
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Already set up? Use the connection test below. Local mode requires Ollama running on this same computer.
                   </p>
                   <Button variant="outline" size="sm" onClick={async () => {
                     try {
