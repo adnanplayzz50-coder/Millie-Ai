@@ -1,18 +1,22 @@
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { defineConfig } from "vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import react from "@vitejs/plugin-react";
 
 export default defineConfig({
-  tanstackStart: {
-    server: { entry: "server" },
-  },
-
-  vite: {
-    define: {
-      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
-        process.env.SUPABASE_URL ?? "",
-      ),
-      "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
-        process.env.SUPABASE_PUBLISHABLE_KEY ?? "",
-      ),
-    },
+  plugins: [
+    tanstackStart({
+      server: { entry: "server" },
+    }),
+    react(),
+  ],
+  define: {
+    "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
+      process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "",
+    ),
+    "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
+      process.env.SUPABASE_PUBLISHABLE_KEY ??
+        process.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
+        "",
+    ),
   },
 });
