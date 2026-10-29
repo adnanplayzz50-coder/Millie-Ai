@@ -11,7 +11,7 @@ export function Logo({ className, strokeWidth = 3 }: { className?: string; strok
       stroke="currentColor"
       strokeWidth={strokeWidth}
       strokeLinecap="round"
-      className={cn("text-primary", className)}
+      className={cn("block shrink-0 text-primary", className)}
       aria-label="Millie logo"
       role="img"
     >
