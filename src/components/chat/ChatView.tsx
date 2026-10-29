@@ -429,6 +429,16 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
               </DropdownMenuSub>
             </DropdownMenuContent>
           </DropdownMenu>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setWeb((v) => !v)}
+            aria-label="Search the web with Google"
+            title={web ? "Google web search is on" : "Search the web with Google"}
+            className={cn("shrink-0", web && "text-primary")}
+          >
+            <Globe className="size-4" />
+          </Button>
           {mode === "code" && (
             <select
               value={codeModel}
