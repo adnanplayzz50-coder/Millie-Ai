@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   ChevronsLeft,
@@ -257,7 +257,7 @@ function ConversationItem({ c, onNavigate }: { c: ConversationRow; onNavigate: (
   const navigate = useNavigate();
   const active = params.id === c.id;
 
-  const update = async (patch: { title?: string; pinned?: boolean }) => {
+  const update = async (patch: { title?: string; pinned?: boolean; project_id?: string | null }) => {
     await supabase.from("conversations").update(patch).eq("id", c.id);
     invalidate("conversations");
   };
@@ -305,6 +305,14 @@ function ConversationItem({ c, onNavigate }: { c: ConversationRow; onNavigate: (
         to="/c/$id"
         params={{ id: c.id }}
         onClick={onNavigate}
+        onPointerDown={(e) => {
+          if (e.pointerType === "mouse") return;
+          clearHold();
+          holdTimer.current = setTimeout(() => setMenuOpen(true), 550);
+        }}
+        onPointerUp={clearHold}
+        onPointerLeave={clearHold}
+        onContextMenu={(e) => { e.preventDefault(); clearHold(); setMenuOpen(true); }}
         className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2"
       >
         {c.pinned && <Pin className="size-3 shrink-0 text-primary" />}
@@ -322,9 +330,29 @@ function ConversationItem({ c, onNavigate }: { c: ConversationRow; onNavigate: (
           <DropdownMenuItem onClick={() => update({ pinned: !c.pinned })}>
             {c.pinned ? <PinOff className="size-4" /> : <Pin className="size-4" />} {c.pinned ? "Unpin" : "Pin"}
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setEditing(true)}>
+          <DropdownMenuItem onSelect={() => { setTitle(c.title); setEditing(true); }}>
             <Pencil className="size-4" /> Rename
           </DropdownMenuItem>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <FolderKanban className="size-4" /> Add to project
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              <DropdownMenuItem onSelect={() => update({ project_id: null })}>
+                No project
+              </DropdownMenuItem>
+              {(projects.data ?? []).map((project) => (
+                <DropdownMenuItem key={project.id} onSelect={() => update({ project_id: project.id })}>
+                  <FolderKanban className="size-4" /> {project.name}
+                </DropdownMenuItem>
+              ))}
+              {!(projects.data ?? []).length && (
+                <DropdownMenuItem onSelect={() => navigate({ to: "/projects" })}>
+                  Create a project…
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
           <DropdownMenuItem onClick={() => exportConversation(c.id, c.title)}>
             <Download className="size-4" /> Export Markdown
           </DropdownMenuItem>
