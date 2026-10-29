@@ -256,6 +256,13 @@ function ConversationItem({ c, onNavigate }: { c: ConversationRow; onNavigate: (
   const params = useParams({ strict: false }) as { id?: string };
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(c.title);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearHold = () => {
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    holdTimer.current = null;
+  };
+  const projects = useProjects();
   const invalidate = useInvalidate();
   const navigate = useNavigate();
   const active = params.id === c.id;
@@ -322,7 +329,7 @@ function ConversationItem({ c, onNavigate }: { c: ConversationRow; onNavigate: (
         {c.mode === "code" && <span className="font-mono text-[10px] text-primary">C0DE</span>}
         <span className="truncate">{c.title}</span>
       </Link>
-      <DropdownMenu>
+      <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
         <DropdownMenuTrigger
           className="mr-1 rounded p-1 text-muted-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 data-[state=open]:opacity-100"
           aria-label="Chat options"
