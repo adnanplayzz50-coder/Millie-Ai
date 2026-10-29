@@ -6,12 +6,12 @@ import { ProjectCard } from "./ProjectCard";
 import { FileCard } from "./FileCard";
 import { FILE_HINT, isFileRequest } from "@/lib/file-gen";
 import { parseReply } from "@/lib/project-parser";
-import { FileText, Globe, Image as ImageIcon, Menu, Mic, Monitor, Plus, Send, Settings, Square, Video, Wrench } from "lucide-react";
+import { FileText, Globe, Image as ImageIcon, Menu, Mic, Monitor, Plus, Send, Square, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useApp } from "@/components/app/AppProvider";
 import { createConversation, useInvalidate } from "@/hooks/use-data";
 import { streamChat } from "@/lib/chat-client";
@@ -81,7 +81,6 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
   const [atts, setAtts] = useState<Attachment[]>([]);
   const [web, setWeb] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [codeModel, setCodeModel] = useState("auto");
   const [greeting] = useState(randomGreeting);
   const [callOpen, setCallOpen] = useState(false);
   const [regionId, setRegionId] = useState<string | null>(null);
@@ -119,7 +118,7 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     }
     const icon = link;
     const show = (filled: boolean) => {
-      icon.href = filled ? "/favicon-filled.png" : "/favicon-hollow.png";
+      icon.href = "/favicon.svg?v=2";
     };
     if (busy) {
       let on = false;
@@ -187,7 +186,7 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     const aid = uid();
     abort.current = new AbortController();
     try {
-      await streamChat({ messages: wire, mode, webSearch, projectId, codeModel }, {
+      await streamChat({ messages: wire, mode, webSearch, projectId }, {
         onText: (t) => {
           reply += t;
           setMessages([...next, { id: aid, role: "assistant", content: reply }]);
@@ -404,30 +403,18 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber-400/15 text-amber-300"><ImageIcon className="size-5" /></span>
                 <span className="flex min-w-0 flex-col gap-0.5"><span>Image</span><span className="text-xs font-normal text-muted-foreground">Add an image for Millie to analyze</span></span>
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => navigate({ to: "/account" })} className="gap-3 rounded-lg px-3 py-3">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-violet-300"><Settings className="size-5" /></span>
-                <span className="flex min-w-0 flex-col gap-0.5"><span>Settings</span><span className="text-xs font-normal text-muted-foreground">Manage your preferences</span></span>
+              <DropdownMenuItem onSelect={() => { void screenshot(); }} className="gap-3 rounded-lg px-3 py-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-300"><Monitor className="size-5" /></span>
+                <span className="flex min-w-0 flex-col gap-0.5"><span>Take a screenshot</span><span className="text-xs font-normal text-muted-foreground">Capture your screen for Millie</span></span>
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="my-1" />
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="gap-3 rounded-lg px-3 py-3">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-300"><Wrench className="size-5" /></span>
-                  <span className="flex min-w-0 flex-col gap-0.5"><span>Tools</span><span className="text-xs font-normal text-muted-foreground">Search, capture, or start a call</span></span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="w-64 rounded-xl border-border/80 bg-popover/95 p-1 shadow-xl">
-                  <DropdownMenuItem onSelect={() => { void screenshot(); }} className="gap-2 rounded-lg py-2.5">
-                    <Monitor className="size-4" /> Take a screenshot
-                    <span className="ml-auto text-xs text-muted-foreground">Ctrl+Shift+S</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => setCallOpen(true)} className="gap-2 rounded-lg py-2.5">
-                    <Video className="size-4" /> Start video call
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => setWeb((v) => !v)} className="gap-2 rounded-lg py-2.5">
-                    <Globe className={cn("size-4", web && "text-primary")} /> {web ? "Turn off web search" : "Turn on web search"}
-                    {web && <span className="ml-auto text-xs text-primary">On</span>}
-                  </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
+              <DropdownMenuItem onSelect={() => setCallOpen(true)} className="gap-3 rounded-lg px-3 py-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-rose-500/15 text-rose-300"><Video className="size-5" /></span>
+                <span className="flex min-w-0 flex-col gap-0.5"><span>Video call with Millie</span><span className="text-xs font-normal text-muted-foreground">Talk face-to-face with Millie</span></span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setWeb((v) => !v)} className="gap-3 rounded-lg px-3 py-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sky-500/15 text-sky-400"><Globe className="size-5" /></span>
+                <span className="flex min-w-0 flex-col gap-0.5"><span>{web ? "Turn off web search" : "Turn on web search"}</span><span className="text-xs font-normal text-muted-foreground">Search the web with Google{web ? " · On" : ""}</span></span>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
@@ -440,19 +427,7 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
           >
             <Globe className="size-4" />
           </Button>
-          {mode === "code" && (
-            <select
-              value={codeModel}
-              onChange={(e) => setCodeModel(e.target.value)}
-              aria-label="Coding model"
-              className="max-w-[9rem] rounded-md border border-border bg-background px-2 py-1 font-mono text-xs"
-            >
-              <option value="auto">Auto</option>
-              <option value="qwen-coder">Qwen3 Coder</option>
-              <option value="codestral">Codestral</option>
-              <option value="deepseek">DeepSeek</option>
-            </select>
-          )}
+
           <textarea
             autoFocus
             value={input}
