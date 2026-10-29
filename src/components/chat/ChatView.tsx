@@ -6,12 +6,12 @@ import { ProjectCard } from "./ProjectCard";
 import { FileCard } from "./FileCard";
 import { FILE_HINT, isFileRequest } from "@/lib/file-gen";
 import { parseReply } from "@/lib/project-parser";
-import { Camera, Globe, Menu, Mic, Monitor, Paperclip, Send, Square, Video } from "lucide-react";
+import { Camera, FileText, Globe, Image as ImageIcon, Menu, Mic, Monitor, Plus, Send, Settings, Square, Video, Wrench } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useApp } from "@/components/app/AppProvider";
 import { createConversation, useInvalidate } from "@/hooks/use-data";
 import { streamChat } from "@/lib/chat-client";
@@ -86,7 +86,7 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
   const [callOpen, setCallOpen] = useState(false);
   const [regionId, setRegionId] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);\n  const imageRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const invalidate = useInvalidate();
   const memorize = useServerFn(extractMemories);
@@ -376,35 +376,59 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
               e.target.value = "";
             }}
           />
-          <Button variant="ghost" size="icon" onClick={() => fileRef.current?.click()} aria-label="Attach">
-            <Paperclip className="size-4" />
-          </Button>
+          <input
+            ref={imageRef}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={async (e) => {
+              if (e.target.files) setAtts([...atts, ...(await filesToAttachments(e.target.files))]);
+              e.target.value = "";
+            }}
+          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Camera">
-                <Camera className="size-4" />
+              <Button variant="ghost" size="icon" className="shrink-0 rounded-full" aria-label="Open attachments and tools" title="Add files, images, or tools">
+                <Plus className="size-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => void screenshot()}>
-                <Monitor className="size-4" /> Take a screenshot
-                <span className="ml-auto pl-4 text-xs text-muted-foreground">Ctrl+Shift+S</span>
+            <DropdownMenuContent align="start" side="top" sideOffset={12} className="w-72 rounded-xl border-border/80 bg-popover/95 p-2 shadow-xl backdrop-blur-xl">
+              <DropdownMenuLabel className="px-3 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Add to your message</DropdownMenuLabel>
+              <DropdownMenuItem onSelect={() => fileRef.current?.click()} className="gap-3 rounded-lg px-3 py-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sky-500/15 text-sky-400"><FileText className="size-5" /></span>
+                <span className="flex min-w-0 flex-col gap-0.5"><span>Files</span><span className="text-xs font-normal text-muted-foreground">Attach documents and other files</span></span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setCallOpen(true)}>
-                <Video className="size-4" /> Start a video call with Millie
+              <DropdownMenuItem onSelect={() => imageRef.current?.click()} className="gap-3 rounded-lg px-3 py-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber-400/15 text-amber-300"><ImageIcon className="size-5" /></span>
+                <span className="flex min-w-0 flex-col gap-0.5"><span>Image</span><span className="text-xs font-normal text-muted-foreground">Add an image for Millie to analyze</span></span>
               </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => navigate({ to: "/settings" })} className="gap-3 rounded-lg px-3 py-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-violet-300"><Settings className="size-5" /></span>
+                <span className="flex min-w-0 flex-col gap-0.5"><span>Settings</span><span className="text-xs font-normal text-muted-foreground">Manage your preferences</span></span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="my-1" />
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="gap-3 rounded-lg px-3 py-3">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-300"><Wrench className="size-5" /></span>
+                  <span className="flex min-w-0 flex-col gap-0.5"><span>Tools</span><span className="text-xs font-normal text-muted-foreground">Search, capture, or start a call</span></span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="w-64 rounded-xl border-border/80 bg-popover/95 p-1 shadow-xl">
+                  <DropdownMenuItem onSelect={() => { void screenshot(); }} className="gap-2 rounded-lg py-2.5">
+                    <Monitor className="size-4" /> Take a screenshot
+                    <span className="ml-auto text-xs text-muted-foreground">Ctrl+Shift+S</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setCallOpen(true)} className="gap-2 rounded-lg py-2.5">
+                    <Video className="size-4" /> Start video call
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setWeb((v) => !v)} className="gap-2 rounded-lg py-2.5">
+                    <Globe className={cn("size-4", web && "text-primary")} /> {web ? "Turn off web search" : "Turn on web search"}
+                    {web && <span className="ml-auto text-xs text-primary">On</span>}
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-  variant="ghost"
-  size="icon"
-  onClick={() => setWeb(!web)}
-  aria-label="Search the web"
-  title="Search the web with Google. Only runs when this is on."
-  className={cn(web && "text-primary")}
->
-            <Globe className="size-4" />
-          </Button>
           {mode === "code" && (
             <select
               value={codeModel}
