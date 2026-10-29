@@ -6,7 +6,7 @@ import { ProjectCard } from "./ProjectCard";
 import { FileCard } from "./FileCard";
 import { FILE_HINT, isFileRequest } from "@/lib/file-gen";
 import { parseReply } from "@/lib/project-parser";
-import { Camera, FileText, Globe, Image as ImageIcon, Menu, Mic, Monitor, Plus, Send, Settings, Square, Video, Wrench } from "lucide-react";
+import { FileText, Globe, Image as ImageIcon, Menu, Mic, Monitor, Plus, Send, Settings, Square, Video, Wrench } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { Logo } from "@/components/Logo";
@@ -403,7 +403,7 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber-400/15 text-amber-300"><ImageIcon className="size-5" /></span>
                 <span className="flex min-w-0 flex-col gap-0.5"><span>Image</span><span className="text-xs font-normal text-muted-foreground">Add an image for Millie to analyze</span></span>
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => navigate({ to: "/settings" })} className="gap-3 rounded-lg px-3 py-3">
+              <DropdownMenuItem onSelect={() => navigate({ to: "/account" })} className="gap-3 rounded-lg px-3 py-3">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-violet-300"><Settings className="size-5" /></span>
                 <span className="flex min-w-0 flex-col gap-0.5"><span>Settings</span><span className="text-xs font-normal text-muted-foreground">Manage your preferences</span></span>
               </DropdownMenuItem>
