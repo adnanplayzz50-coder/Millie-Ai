@@ -5,8 +5,8 @@ export function Logo({ className, strokeWidth = 3 }: { className?: string; strok
   return (
     <svg
       viewBox="0 0 64 64"
-      width="100%"
-      height="100%"
+      width="64"
+      height="64"
       fill="none"
       stroke="currentColor"
       strokeWidth={strokeWidth}
