@@ -216,13 +216,22 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     const a = atts;
     setAtts([]);
     if (!conversationId) {
-      const id = await createConversation({ mode, projectId, title: text || a[0]?.name || "New chat" });
-      setPending(id, { text, attachments: a, webSearch: web });
-      invalidate("conversations");
-      navigate({ to: "/c/$id", params: { id } });
+      try {
+        const id = await createConversation({ mode, projectId, title: text || a[0]?.name || "New chat" });
+        setPending(id, { text, attachments: a, webSearch: web });
+        invalidate("conversations");
+        navigate({ to: "/c/$id", params: { id } });
+      } catch (e) {
+        setInput(text);
+        setAtts(a);
+        setMessages((prev) => [...prev, { id: uid(), role: "assistant", content: `⚠️ Could not start a chat: ${(e as Error).message}. Check your Supabase connection and database permissions.` }]);
+      }
       return;
     }
-    void run(messages, text, a, web);
+    void run(messages, text, a, web).catch((e) => {
+      setBusy(false);
+      setMessages((prev) => [...prev, { id: uid(), role: "assistant", content: `⚠️ Millie couldn't send that message: ${(e as Error).message}` }]);
+    });
   }
 
   async function sendFromCall({ text, images, hint }: CallPayload) {
