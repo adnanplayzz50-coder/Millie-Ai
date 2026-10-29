@@ -17,14 +17,24 @@ export function OnboardingDialog() {
   const { profile, user, refreshProfile } = useApp();
   const [vals, setVals] = useState({ hobbies: "", interests: "", ai_use: "" });
   const [busy, setBusy] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+  // Persist dismissal per signed-in user on this browser as a fallback if the profile update fails.
+  const [dismissedUserId, setDismissedUserId] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem("millie-onboarding-dismissed-user") ?? "";
+  });
+  const dismissed = dismissedUserId === user.id;
   const open = !!profile && !profile.onboarded && !dismissed;
 
   const finish = async (save: boolean) => {
     if (busy) return;
 
     // Close immediately so a slow or failed database request cannot trap the user.
-    setDismissed(true);
+    setDismissedUserId(user.id);
+    try {
+      window.localStorage.setItem("millie-onboarding-dismissed-user", user.id);
+    } catch {
+      // Private browsing or storage restrictions should not prevent dismissal this session.
+    }
     setBusy(true);
 
     try {
