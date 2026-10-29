@@ -86,7 +86,8 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
   const [callOpen, setCallOpen] = useState(false);
   const [regionId, setRegionId] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);\n  const imageRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const imageRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const invalidate = useInvalidate();
   const memorize = useServerFn(extractMemories);
