@@ -16,16 +16,37 @@ function FilesPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
+      setError(null);
       const { data, error } = await (supabase as any)
         .from("messages")
-        .select("id, created_at, sources, conversation_id, conversations(title)")
+        .select("id, created_at, sources, conversation_id")
         .not("sources", "is", null)
         .order("created_at", { ascending: false })
         .limit(500);
-      if (error) return setError(error.message);
+      if (error) {
+        if (!cancelled) setError(`Couldn't load files: ${error.message}`);
+        return;
+      }
+
+      const messages = data ?? [];
+      const chatIds = [...new Set(messages.map((m: any) => m.conversation_id).filter(Boolean))];
+      const titleById = new Map<string, string>();
+      if (chatIds.length) {
+        const { data: chats, error: chatError } = await supabase
+          .from("conversations")
+          .select("id, title")
+          .in("id", chatIds);
+        if (chatError) {
+          if (!cancelled) setError(`Files loaded, but chat names couldn't be loaded: ${chatError.message}`);
+          return;
+        }
+        for (const chat of chats ?? []) titleById.set(chat.id, chat.title ?? "Chat");
+      }
+
       const out: FileRow[] = [];
-      for (const m of data ?? []) {
+      for (const m of messages) {
         const files: string[] = Array.isArray(m.sources?.files) ? m.sources.files : [];
         files.forEach((name, i) =>
           out.push({
@@ -33,12 +54,15 @@ function FilesPage() {
             name,
             when: m.created_at,
             chatId: m.conversation_id,
-            chatTitle: m.conversations?.title ?? "Chat",
+            chatTitle: titleById.get(m.conversation_id) ?? "Chat",
           }),
         );
       }
-      setRows(out);
-    })();
+      if (!cancelled) setRows(out);
+    })().catch((e) => {
+      if (!cancelled) setError(`Couldn't load files: ${(e as Error).message}`);
+    });
+    return () => { cancelled = true; };
   }, []);
 
   return (
