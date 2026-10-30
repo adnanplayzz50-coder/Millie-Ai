@@ -108,6 +108,25 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     }
   }, [busy]);
 
+  // Idle uses the normal hollow icon, thinking uses the uploaded hollow PNG,
+  // and completion briefly uses the filled PNG before returning to idle.
+  useEffect(() => {
+    let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.head.appendChild(link);
+    }
+
+    if (busy) {
+      link.href = "/favicon-hollow.png?v=1";
+    } else if (justDone) {
+      link.href = "/favicon-filled.png?v=1";
+    } else {
+      link.href = "/favicon.svg?v=11";
+    }
+  }, [busy, justDone]);
+
   useEffect(() => {
     setMode(initialMode);
   }, [initialMode]);
