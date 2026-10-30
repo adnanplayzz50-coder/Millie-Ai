@@ -122,7 +122,7 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     } else if (justDone) {
       link.href = "/favicon-done.svg?v=2";
     } else {
-      link.href = "/favicon.svg?v=12";
+      link.href = "/favicon.svg?v=13";
     }
   }, [busy, justDone]);
 
