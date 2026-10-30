@@ -108,8 +108,7 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     }
   }, [busy]);
 
-  // Idle uses the normal hollow icon, thinking uses the uploaded hollow PNG,
-  // and completion briefly uses the filled PNG before returning to idle.
+  // Idle uses the standard favicon; thinking and completion use transparent SVG icons.
   useEffect(() => {
     let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
     if (!link) {
@@ -119,9 +118,9 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     }
 
     if (busy) {
-      link.href = "/favicon-thinking.svg?v=1";
+      link.href = "/favicon-thinking.svg?v=2";
     } else if (justDone) {
-      link.href = "/favicon-done.svg?v=1";
+      link.href = "/favicon-done.svg?v=2";
     } else {
       link.href = "/favicon.svg?v=12";
     }
