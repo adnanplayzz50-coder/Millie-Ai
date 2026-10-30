@@ -294,7 +294,7 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
       <div className="flex-1 overflow-y-auto">
         {!messages.length ? (
           <div className="flex h-full flex-col items-center justify-center gap-4 animate-fade-up">
-            <Logo className="size-36" />
+            <Logo className="size-20" />
             <p className={cn("text-2xl", mode === "code" ? "font-mono" : "font-read")}>{greeting}</p>
           </div>
         ) : (
