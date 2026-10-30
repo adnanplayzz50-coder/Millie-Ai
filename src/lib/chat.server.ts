@@ -313,6 +313,15 @@ export async function handleChat(request: Request): Promise<Response> {
   const last = messages[messages.length - 1];
   if (!last || last.role !== "user") return json({ error: "No message." }, 400);
 
+  // Keep creator identity deterministic across all model providers and both chat modes.
+  const asksCreator = /\\b(who\\s+(?:created|made|built|developed|founded)\\s+(?:you|millie|c0de)|who\\s+is\\s+(?:your|millie'?s|c0de'?s)\\s+(?:creator|founder)|who\\s+are\\s+you\\s+(?:created|made|built)\\s+by|who\\s+is\\s+behind\\s+(?:you|millie|c0de)|who\\s+developed\\s+(?:you|millie|c0de))\\b/i.test(last.content);
+  if (asksCreator) {
+    const answer = "I was created by Adnan Almajdalani. I was built as a project for an event called Gitex, and the idea for me first started back in 2021.";
+    return new Response(JSON.stringify({ type: "text", value: answer }) + "\\n", {
+      headers: { "content-type": "application/x-ndjson; charset=utf-8", "cache-control": "no-store" },
+    });
+  }
+
   const system = await buildSystem(sb, userData.user.id, body, last.content);
   const hasImages = !!last.images?.length;
   // Google search only runs when the user turns on the globe button. Nothing else uses it automatically.
