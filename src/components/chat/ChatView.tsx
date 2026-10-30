@@ -121,11 +121,11 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     }
 
     if (busy) {
-      link.href = "/favicon-hollow.png?v=19";
+      link.href = "/favicon-thinking.svg?v=20";
     } else if (justDone) {
-      link.href = "/favicon-filled.png?v=19";
+      link.href = "/favicon-filled.png?v=20";
     } else {
-      link.href = "/favicon-hollow.png?v=19";
+      link.href = "/favicon-hollow.png?v=20";
     }
   }, [busy, justDone]);
 
@@ -294,7 +294,7 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
       <div className="flex-1 overflow-y-auto">
         {!messages.length ? (
           <div className="flex h-full flex-col items-center justify-center gap-4 animate-fade-up">
-            <Logo className="size-16" />
+            <Logo className="size-10" />
             <p className={cn("text-2xl", mode === "code" ? "font-mono" : "font-read")}>{greeting}</p>
           </div>
         ) : (
