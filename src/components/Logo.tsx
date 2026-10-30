@@ -1,6 +1,5 @@
 import { cn } from "@/lib/utils";
 
-/** Uses the original Millie logo image asset throughout the app. */
 export function Logo({ className }: { className?: string; strokeWidth?: number }) {
   return (
     <img
