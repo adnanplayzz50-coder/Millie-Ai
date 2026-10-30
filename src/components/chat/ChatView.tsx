@@ -108,7 +108,7 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     }
   }, [busy]);
 
-  // The website's tab icon: hollow when idle, flashing while thinking, full when done.
+  // Switch the browser tab icon between idle, thinking, and completed states.
   useEffect(() => {
     let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
     if (!link) {
@@ -116,20 +116,14 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
       link.rel = "icon";
       document.head.appendChild(link);
     }
-    const icon = link;
-    const show = (filled: boolean) => {
-      icon.href = "/favicon.svg?v=2";
-    };
+
     if (busy) {
-      let on = false;
-      show(false);
-      const t = setInterval(() => {
-        on = !on;
-        show(on);
-      }, 450);
-      return () => clearInterval(t);
+      link.href = "/favicon.svg?v=10";
+    } else if (justDone) {
+      link.href = "/favicon-filled.png?v=1";
+    } else {
+      link.href = "/favicon.svg?v=10";
     }
-    show(justDone);
   }, [busy, justDone]);
 
   useEffect(() => {
