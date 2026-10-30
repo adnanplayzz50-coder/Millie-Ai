@@ -1,12 +1,12 @@
 import { cn } from "@/lib/utils";
 
-/** Millie logo using the user's original transparent hollow-logo image. */
+/** Uses the original Millie logo image asset throughout the app. */
 export function Logo({ className }: { className?: string; strokeWidth?: number }) {
   return (
     <img
-      src="/favicon-hollow.png"
+      src="/millie-logo-192.png"
       alt="Millie"
-      className={cn("scale-[1.05]", className)}
+      className={cn("object-contain", className)}
       draggable={false}
     />
   );
