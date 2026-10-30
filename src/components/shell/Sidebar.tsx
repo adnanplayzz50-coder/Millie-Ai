@@ -92,7 +92,7 @@ export function Sidebar() {
     <aside className={cn("glass flex h-full flex-col border-r border-border transition-[width] duration-200", collapsed ? "w-16" : "w-72")}>
       <div className={cn("flex items-center gap-2 px-4 pt-4 pb-3", collapsed && "flex-col gap-3 px-0")}>
         <Link to="/chat" search={{}} onClick={close} className="flex items-center gap-2">
-          <Logo className="size-7" />
+          <Logo className="size-4" />
           {!collapsed && <span className="font-read text-2xl tracking-tight">Millie</span>}
         </Link>
         {!collapsed && <WakeIndicator />}
