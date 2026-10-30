@@ -98,15 +98,18 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     if (busy) {
       wasBusy.current = true;
       setJustDone(false);
-      return;
-    }
-    if (wasBusy.current) {
+    } else if (wasBusy.current) {
       wasBusy.current = false;
       setJustDone(true);
-      const t = setTimeout(() => setJustDone(false), 5000);
-      return () => clearTimeout(t);
     }
   }, [busy]);
+
+  // Keep the completed icon visible for five full seconds.
+  useEffect(() => {
+    if (!justDone) return;
+    const t = window.setTimeout(() => setJustDone(false), 5000);
+    return () => window.clearTimeout(t);
+  }, [justDone]);
 
   // Idle uses the standard favicon; thinking and completion use transparent SVG icons.
   useEffect(() => {
@@ -118,11 +121,11 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     }
 
     if (busy) {
-      link.href = "/favicon-thinking.svg?v=2";
+      link.href = "/favicon-thinking.svg?v=3";
     } else if (justDone) {
-      link.href = "/favicon-done.svg?v=2";
+      link.href = "/favicon-done.svg?v=3";
     } else {
-      link.href = "/favicon.svg?v=13";
+      link.href = "/favicon.svg?v=14";
     }
   }, [busy, justDone]);
 
