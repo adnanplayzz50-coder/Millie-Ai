@@ -5,13 +5,11 @@ export function Logo({ className, strokeWidth = 3 }: { className?: string; strok
   return (
     <svg
       viewBox="0 0 64 64"
-      width="64"
-      height="64"
       fill="none"
       stroke="currentColor"
       strokeWidth={strokeWidth}
       strokeLinecap="round"
-      className={cn("block shrink-0 text-primary", className)}
+      className={cn("text-primary", className)}
       aria-label="Millie logo"
       role="img"
     >
