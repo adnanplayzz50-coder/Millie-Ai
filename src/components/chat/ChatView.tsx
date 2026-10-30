@@ -103,28 +103,10 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     if (wasBusy.current) {
       wasBusy.current = false;
       setJustDone(true);
-      const t = setTimeout(() => setJustDone(false), 1500);
+      const t = setTimeout(() => setJustDone(false), 5000);
       return () => clearTimeout(t);
     }
   }, [busy]);
-
-  // Switch the browser tab icon between idle, thinking, and completed states.
-  useEffect(() => {
-    let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-    if (!link) {
-      link = document.createElement("link");
-      link.rel = "icon";
-      document.head.appendChild(link);
-    }
-
-    if (busy) {
-      link.href = "/favicon.svg?v=10";
-    } else if (justDone) {
-      link.href = "/favicon-filled.png?v=1";
-    } else {
-      link.href = "/favicon.svg?v=10";
-    }
-  }, [busy, justDone]);
 
   useEffect(() => {
     setMode(initialMode);
