@@ -1,7 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Camera, Download, Monitor, Send, Settings, X } from "lucide-react";
 import { cachedSettings, isDark } from "@/lib/theme";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/localmillie")({
   ssr: false,
@@ -103,6 +104,38 @@ async function captureFrame(kind: "screen" | "camera"): Promise<string> {
 
 const stripDataUrl = (u: string) => u.split(",")[1] ?? u;
 
+// Tells the sign-in page to bring the visitor back here after they sign in.
+const AFTER_LOGIN_KEY = "millie-after-login";
+
+// A saved login lives in this browser under a key like sb-<project>-auth-token, so it can be
+// read with no internet. That is how "already signed in on the normal site" works offline.
+function hasSavedSession(): boolean {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("sb-") && key.endsWith("-auth-token")) {
+        const saved = JSON.parse(localStorage.getItem(key) || "null");
+        if (saved && (saved.refresh_token || saved.access_token)) return true;
+      }
+    }
+  } catch {
+    // unreadable storage counts as not signed in
+  }
+  return false;
+}
+
+async function isLoggedIn(): Promise<boolean> {
+  if (!navigator.onLine) return hasSavedSession();
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (data.session) return true;
+    // An error here usually means the network failed while refreshing, not that they signed out.
+    return error ? hasSavedSession() : false;
+  } catch {
+    return hasSavedSession();
+  }
+}
+
 function MillieLocal() {
   const [cfg, setCfg] = useState<Cfg>(DEFAULTS);
   const [loaded, setLoaded] = useState(false);
@@ -114,6 +147,27 @@ function MillieLocal() {
   const [notice, setNotice] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const [online, setOnline] = useState(true);
+  const nav = useNavigate();
+  const [signedIn, setSignedIn] = useState(false);
+
+  // Only people signed in on the normal site can use this page. Everyone else goes to /auth.
+  useEffect(() => {
+    let active = true;
+    isLoggedIn().then((ok) => {
+      if (!active) return;
+      try {
+        if (ok) sessionStorage.removeItem(AFTER_LOGIN_KEY);
+        else sessionStorage.setItem(AFTER_LOGIN_KEY, "/localmillie");
+      } catch {
+        // ignore unavailable session storage
+      }
+      if (ok) setSignedIn(true);
+      else nav({ to: "/auth", search: {} });
+    });
+    return () => {
+      active = false;
+    };
+  }, [nav]);
 
   // Track the internet connection. With no internet, Millie always runs locally.
   useEffect(() => {
@@ -307,6 +361,14 @@ function MillieLocal() {
 
   const screenOk = loaded && screenShareSupported();
   const modelLabel = mode === "local" ? cfg.localModel : cfg.onlineModel;
+
+  if (!signedIn) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background text-sm text-muted-foreground">
+        Checking sign-in...
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
