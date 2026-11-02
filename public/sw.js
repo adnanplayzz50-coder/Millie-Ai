@@ -1,7 +1,7 @@
 // Millie service worker: network-first, never caches auth or API traffic.
-// When the internet is off, any page load is sent to the local Millie page (/LocalMillie).
-const CACHE = "millie-v3";
-const LOCAL = "/LocalMillie";
+// When the internet is off, any page load is sent to the local Millie page (/localmillie).
+const CACHE = "millie-v4";
+const LOCAL = "/localmillie";
 const STATIC = /\.(png|svg|css|js|woff2?)$/;
 
 self.addEventListener("install", (event) => {
