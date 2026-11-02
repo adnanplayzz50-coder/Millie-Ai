@@ -5,15 +5,17 @@ const LOCAL_PATH = "/localmillie";
 const CHECK_EVERY_MS = 5000;
 const PROBE_TIMEOUT_MS = 3000;
 
-// True when the Millie site can actually be reached. The "ping" parameter makes the
-// service worker skip this request, so it always tests the real network. This also
-// catches the case where the device is on Wi-Fi but the internet is down.
+// Bypass the service worker so this checks the real network, not a cached response.
 async function siteReachable(): Promise<boolean> {
   if (!navigator.onLine) return false;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), PROBE_TIMEOUT_MS);
   try {
-    const response = await fetch(`/sw.js?ping=${Date.now()}`, { method: "HEAD", cache: "no-store", signal: ctrl.signal });
+    const response = await fetch(`/sw.js?ping=${Date.now()}`, {
+      method: "HEAD",
+      cache: "no-store",
+      signal: ctrl.signal,
+    });
     return response.ok;
   } catch {
     return false;
@@ -22,14 +24,16 @@ async function siteReachable(): Promise<boolean> {
   }
 }
 
-// Sends the visitor to the local Millie page, but only if it is saved for offline use.
-// Without that, the browser would show its own "no internet" page instead.
+// Only redirect when the offline page is already cached on this device.
 async function goLocal() {
-  if (window.location.pathname === LOCAL_PATH) return;
+  // Keep the auth screen available; it explains that authentication needs internet.
+  if (window.location.pathname === LOCAL_PATH || window.location.pathname === "/auth") return;
   try {
-    if (await caches.match(LOCAL_PATH)) window.location.assign(LOCAL_PATH);
+    if (await caches.match(LOCAL_PATH)) {
+      window.location.assign(LOCAL_PATH);
+    }
   } catch {
-    // Cache storage isn't available here, so there is nothing to fall back to.
+    // Cache Storage may be unavailable.
   }
 }
 
@@ -41,53 +45,72 @@ export function OfflineRedirect() {
 
     let warmed = false;
     let stopped = false;
+    let warming = false;
 
-    // While online, make sure the local page and the code it needs are saved on this device.
+    // Cache the local route, auth route, and assets while the site is reachable.
     const warm = async () => {
+      if (warming || stopped) return;
+      warming = true;
       try {
         await navigator.serviceWorker.ready;
         if (!navigator.serviceWorker.controller) {
           await new Promise<void>((resolve) => {
-            navigator.serviceWorker.addEventListener("controllerchange", () => resolve(), { once: true });
-            setTimeout(resolve, 3000);
+            const timeout = window.setTimeout(resolve, 3000);
+            navigator.serviceWorker.addEventListener(
+              "controllerchange",
+              () => {
+                window.clearTimeout(timeout);
+                resolve();
+              },
+              { once: true },
+            );
           });
         }
+
         await fetch(LOCAL_PATH);
         await router.preloadRoute({ to: LOCAL_PATH } as never);
+        await router.preloadRoute({ to: "/auth" } as never);
+
         const files = performance
           .getEntriesByType("resource")
-          .map((e) => e.name)
-          .filter((n) => n.startsWith(window.location.origin) && /\.(js|css|woff2?|png|svg)(\?|$)/.test(n));
-        await Promise.all(files.map((f) => fetch(f).catch(() => undefined)));
+          .map((entry) => entry.name)
+          .filter(
+            (name) =>
+              name.startsWith(window.location.origin) &&
+              /\.(js|css|woff2?|png|svg)(\?|$)/.test(name),
+          );
+
+        await Promise.all(files.map((file) => fetch(file).catch(() => undefined)));
+        warmed = true;
       } catch {
-        // Try again on the next check.
         warmed = false;
+      } finally {
+        warming = false;
       }
     };
 
     const check = async () => {
       if (stopped) return;
       if (await siteReachable()) {
-        if (!warmed) {
-          warmed = true;
-          warm();
-        }
+        if (!warmed) void warm();
       } else {
-        goLocal();
+        void goLocal();
       }
     };
 
-    navigator.serviceWorker.register("/sw.js").catch(() => undefined);
-    check();
-    const timer = setInterval(check, CHECK_EVERY_MS);
-    window.addEventListener("offline", check);
-    window.addEventListener("online", check);
+    void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    void check();
+
+    const timer = window.setInterval(() => void check(), CHECK_EVERY_MS);
+    const handleConnectivityChange = () => void check();
+    window.addEventListener("offline", handleConnectivityChange);
+    window.addEventListener("online", handleConnectivityChange);
 
     return () => {
       stopped = true;
-      clearInterval(timer);
-      window.removeEventListener("offline", check);
-      window.removeEventListener("online", check);
+      window.clearInterval(timer);
+      window.removeEventListener("offline", handleConnectivityChange);
+      window.removeEventListener("online", handleConnectivityChange);
     };
   }, [router]);
 
