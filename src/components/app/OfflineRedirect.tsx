@@ -13,8 +13,8 @@ async function siteReachable(): Promise<boolean> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), PROBE_TIMEOUT_MS);
   try {
-    await fetch(`/sw.js?ping=${Date.now()}`, { method: "HEAD", cache: "no-store", signal: ctrl.signal });
-    return true;
+    const response = await fetch(`/sw.js?ping=${Date.now()}`, { method: "HEAD", cache: "no-store", signal: ctrl.signal });
+    return response.ok;
   } catch {
     return false;
   } finally {
