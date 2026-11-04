@@ -1,10 +1,11 @@
 import { useNavigate } from "@tanstack/react-router";
-import { Brain, Chrome, Cpu, Monitor, Palette, Smartphone } from "lucide-react";
+import { Brain, Chrome, Monitor, Palette, Smartphone } from "lucide-react";
 import { useApp } from "@/components/app/AppProvider";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useHideExChats } from "@/hooks/use-hide-ex-chats";
+import { LocalAiSettings } from "./LocalAiSettings";
 import { downloadExtension } from "@/lib/extension-download";
 
 export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
@@ -68,26 +69,7 @@ export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenCha
             </div>
           </section>
 
-          <section className="space-y-2">
-            <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Local version</h3>
-            <AppRow
-              icon={<Cpu className="size-5" />}
-              title="Millie Local"
-              subtitle="Chat with a model running on your own computer. Uses your theme, colors and font."
-              action={
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    onOpenChange(false);
-                    // Full page load, so the local page starts fresh and reads your saved look.
-                    window.location.assign("/localmillie");
-                  }}
-                >
-                  Open
-                </Button>
-              }
-            />
-          </section>
+          <LocalAiSettings />
 
           <section className="space-y-2">
             <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Our Apps</h3>

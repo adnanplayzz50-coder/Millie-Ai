@@ -6,7 +6,7 @@ import { ProjectCard } from "./ProjectCard";
 import { FileCard } from "./FileCard";
 import { FILE_HINT, isFileRequest } from "@/lib/file-gen";
 import { parseReply } from "@/lib/project-parser";
-import { FileText, Globe, Image as ImageIcon, Menu, Mic, Monitor, Plus, Send, Square, Video } from "lucide-react";
+import { Cpu, FileText, Globe, Image as ImageIcon, Menu, Mic, Monitor, Plus, Send, Square, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { Logo } from "@/components/Logo";
@@ -15,6 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { useApp } from "@/components/app/AppProvider";
 import { createConversation, useInvalidate } from "@/hooks/use-data";
 import { streamChat } from "@/lib/chat-client";
+import { getLocalAi, isNetworkError, OFFLINE_NOTICE, streamLocal, useLocalAi } from "@/lib/local-ai";
 import { setPending, takePending } from "@/lib/pending";
 import { filesToAttachments, contextFromAttachments } from "@/lib/attachments";
 import { captureScreen } from "@/lib/capture";
@@ -73,8 +74,18 @@ function randomGreeting() {
   return GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
 }
 
+// Saving to your account is a bonus. It must never stop a chat, for example when offline.
+async function quietly(p: PromiseLike<unknown>) {
+  try {
+    await p;
+  } catch {
+    // offline or a temporary error: the chat carries on without saving
+  }
+}
+
 export function ChatView({ conversationId, mode: initialMode, projectId }: { conversationId?: string; mode: Mode; projectId?: string | null }) {
   const { settings, setSidebarOpen } = useApp();
+  const localAi = useLocalAi();
   const [mode, setMode] = useState<Mode>(initialMode);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -164,6 +175,10 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
 
+  function addNotice(content: string) {
+    setMessages((prev) => [...prev, { id: uid(), role: "assistant", content }]);
+  }
+
   async function run(history: ChatMessage[], text: string, attachments: Attachment[], webSearch: boolean, forceSpeak?: boolean, hint?: string) {
     const ctx = contextFromAttachments(attachments);
     const images = attachments.filter((a) => a.kind === "image").map((a) => a.dataUrl!);
@@ -171,7 +186,10 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     const next = [...history, user];
     setMessages(next);
     setBusy(true);
-    await supabase.from("messages").insert({ conversation_id: conversationId!, role: "user", content: text, sources: (user.meta ?? {}) as unknown as Json });
+    const useLocal = getLocalAi().enabled;
+    // Chats are saved to your account only while online and inside a saved conversation.
+    const persist = !!conversationId && navigator.onLine;
+    if (persist) await quietly(supabase.from("messages").insert({ conversation_id: conversationId!, role: "user", content: text, sources: (user.meta ?? {}) as unknown as Json }));
     if (!hint && isFileRequest(text)) hint = FILE_HINT;
     const wire = next.map((m, i) => ({
       role: m.role,
@@ -183,44 +201,75 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
     const aid = uid();
     abort.current = new AbortController();
     try {
-      await streamChat({ messages: wire, mode, webSearch, projectId }, {
-        onText: (t) => {
+      const handlers = {
+        onText: (t: string) => {
           reply += t;
           setMessages([...next, { id: aid, role: "assistant", content: reply }]);
         },
-        onSources: (s) => {
+        onSources: (s: Source[]) => {
           sources = s;
         },
-      }, abort.current.signal);
+      };
+      if (useLocal) await streamLocal({ messages: wire, mode }, handlers, abort.current.signal);
+      else await streamChat({ messages: wire, mode, webSearch, projectId }, handlers, abort.current.signal);
     } catch (e) {
-      if ((e as Error).name !== "AbortError") reply = reply || `⚠️ ${(e as Error).message}`;
+      if ((e as Error).name !== "AbortError") {
+        reply = reply || (!useLocal && isNetworkError(e) ? OFFLINE_NOTICE : `⚠️ ${(e as Error).message}`);
+      }
     }
     setMessages([...next, { id: aid, role: "assistant", content: reply, meta: { sources } }]);
     setBusy(false);
     if (reply) {
-      await supabase.from("messages").insert({ conversation_id: conversationId!, role: "assistant", content: reply, sources: { sources: sources ?? [] } as unknown as Json });
-      await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId!);
-      invalidate("conversations");
+      if (persist) {
+        await quietly(supabase.from("messages").insert({ conversation_id: conversationId!, role: "assistant", content: reply, sources: { sources: sources ?? [] } as unknown as Json }));
+        await quietly(supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId!));
+        invalidate("conversations");
+      }
       if (settings.read_aloud || forceSpeak) speak(reply);
-      memorize({ data: { transcript: next.slice(-6).map((m) => `${m.role}: ${m.content}`).join("\n") + `\nassistant: ${reply}` } }).catch(() => {});
+      if (persist && !useLocal) memorize({ data: { transcript: next.slice(-6).map((m) => `${m.role}: ${m.content}`).join("\n") + `\nassistant: ${reply}` } }).catch(() => {});
     }
   }
 
   async function send() {
     const text = input.trim();
     if ((!text && !atts.length) || busy) return;
+    // Offline with Local off: keep what was typed and say how to fix it.
+    if (!navigator.onLine && !getLocalAi().enabled) {
+      addNotice(OFFLINE_NOTICE);
+      return;
+    }
     setInput("");
     const a = atts;
     setAtts([]);
     if (!conversationId) {
+      const startHere = () => {
+        void run(messages, text, a, web).catch((e) => {
+          setBusy(false);
+          addNotice(`⚠️ Millie couldn't send that message: ${(e as Error).message}`);
+        });
+      };
+      // Offline (or continuing a chat that isn't saved): chat right here, nothing is saved to your account.
+      if (!navigator.onLine || messages.length > 0) {
+        startHere();
+        return;
+      }
       try {
         const id = await createConversation({ mode, projectId, title: text || a[0]?.name || "New chat" });
         setPending(id, { text, attachments: a, webSearch: web });
         invalidate("conversations");
         navigate({ to: "/c/$id", params: { id } });
       } catch (e) {
+        // Local AI doesn't need a saved conversation, so carry on without one.
+        if (getLocalAi().enabled) {
+          startHere();
+          return;
+        }
         setInput(text);
         setAtts(a);
+        if (isNetworkError(e)) {
+          addNotice(OFFLINE_NOTICE);
+          return;
+        }
         setMessages((prev) => [...prev, { id: uid(), role: "assistant", content: `⚠️ Could not start a chat: ${(e as Error).message}. Check your Supabase connection and database permissions.` }]);
       }
       return;
@@ -233,7 +282,15 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
 
   async function sendFromCall({ text, images, hint }: CallPayload) {
     const callAtts: Attachment[] = images.map((dataUrl, i) => ({ id: uid(), kind: "image", name: `frame-${i + 1}.png`, dataUrl }));
+    if (!navigator.onLine && !getLocalAi().enabled) {
+      addNotice(OFFLINE_NOTICE);
+      return;
+    }
     if (!conversationId) {
+      if (!navigator.onLine || messages.length > 0) {
+        void run(messages, text, callAtts, false, false, hint);
+        return;
+      }
       const id = await createConversation({ mode, projectId, title: text.slice(0, 60) || "Video call" });
       setPending(id, { text, attachments: callAtts, webSearch: false, hint });
       invalidate("conversations");
@@ -289,6 +346,14 @@ export function ChatView({ conversationId, mode: initialMode, projectId }: { con
             </button>
           ))}
         </div>
+        {localAi.enabled && (
+          <span
+            className="absolute right-4 top-1/2 inline-flex -translate-y-1/2 items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground"
+            title={`Using Ollama (${localAi.model}) instead of the online AI`}
+          >
+            <Cpu className="size-3" /> Local
+          </span>
+        )}
       </header>
 
       <div className="flex-1 overflow-y-auto">

@@ -12,7 +12,7 @@ import { type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { THEME_BOOT_SCRIPT } from "../lib/theme";
-import { OfflineRedirect } from "@/components/app/OfflineRedirect";
+import { OfflineReady } from "../components/app/OfflineReady";
 
 function NotFoundComponent() {
   return (
@@ -119,7 +119,8 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <OfflineRedirect />
+      {/* Saves Millie on this device so it still opens with no internet. */}
+      <OfflineReady />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
     </QueryClientProvider>

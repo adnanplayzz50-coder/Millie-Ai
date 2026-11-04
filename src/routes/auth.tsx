@@ -1,5 +1,6 @@
+
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
 import { PROVIDER_ICONS } from "@/components/ProviderIcons";
@@ -24,18 +25,6 @@ export const Route = createFileRoute("/auth")({
   component: Auth,
 });
 
-const AFTER_LOGIN_KEY = "millie-after-login";
-
-function afterLoginPath(): "/localmillie" | "/chat" {
-  try {
-    return sessionStorage.getItem(AFTER_LOGIN_KEY) === "/localmillie"
-      ? "/localmillie"
-      : "/chat";
-  } catch {
-    return "/chat";
-  }
-}
-
 function Auth() {
   const nav = useNavigate();
 
@@ -46,14 +35,16 @@ function Auth() {
   const [busy, setBusy] = useState(false);
   const [online, setOnline] = useState(true);
 
+  // Google and Apple sign-in need the internet, so they are turned off while offline.
   useEffect(() => {
-    const updateOnline = () => setOnline(navigator.onLine);
-    updateOnline();
-    window.addEventListener("online", updateOnline);
-    window.addEventListener("offline", updateOnline);
+    setOnline(navigator.onLine);
+    const goOnline = () => setOnline(true);
+    const goOffline = () => setOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
     return () => {
-      window.removeEventListener("online", updateOnline);
-      window.removeEventListener("offline", updateOnline);
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
     };
   }, []);
 
@@ -62,22 +53,20 @@ function Auth() {
 
     supabase.auth.getSession().then(({ data, error }) => {
       if (!active) return;
+
       if (error) {
         setMsg(error.message);
         return;
       }
+
       if (data.session) {
-        nav({ to: afterLoginPath(), search: {} });
-      }
-    }).catch((error: unknown) => {
-      if (active) {
-        setMsg(error instanceof Error ? error.message : "Could not check your saved session.");
+        nav({ to: "/chat", search: {} });
       }
     });
 
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       if (active && session) {
-        nav({ to: afterLoginPath(), search: {} });
+        nav({ to: "/chat", search: {} });
       }
     });
 
@@ -98,20 +87,27 @@ function Auth() {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${window.location.origin}/auth` },
+        options: {
+          redirectTo: `${window.location.origin}/auth`,
+        },
       });
 
       if (error) {
         setMsg(`Could not sign in with ${provider}: ${error.message}`);
         setBusy(false);
       }
+      // On success, Supabase redirects the browser to the provider.
     } catch (error) {
-      setMsg(error instanceof Error ? error.message : "An unexpected sign-in error occurred.");
+      setMsg(
+        error instanceof Error
+          ? error.message
+          : "An unexpected sign-in error occurred.",
+      );
       setBusy(false);
     }
   };
 
-  const submit = async (e: FormEvent<HTMLFormElement>) => {
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMsg("");
     if (!navigator.onLine) {
@@ -125,22 +121,34 @@ function Auth() {
         const { data, error } = await supabase.auth.signUp({
           email,
           password: pw,
-          options: { emailRedirectTo: `${window.location.origin}/auth` },
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth`,
+          },
         });
 
         if (error) {
           setMsg(error.message);
         } else if (data.session) {
-          nav({ to: afterLoginPath(), search: {} });
+          nav({ to: "/chat", search: {} });
         } else {
           setMsg("Check your email to confirm your account.");
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password: pw });
-        if (error) setMsg(error.message);
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password: pw,
+        });
+
+        if (error) {
+          setMsg(error.message);
+        }
       }
     } catch (error) {
-      setMsg(error instanceof Error ? error.message : "An unexpected authentication error occurred.");
+      setMsg(
+        error instanceof Error
+          ? error.message
+          : "An unexpected authentication error occurred.",
+      );
     } finally {
       setBusy(false);
     }
@@ -150,11 +158,13 @@ function Auth() {
     <div className="flex min-h-dvh items-center justify-center p-6">
       <div className="w-full max-w-sm space-y-6 text-center">
         <Logo className="mx-auto size-16" />
+
         <h1 className="font-read text-3xl">Millie</h1>
 
         <div className="space-y-2">
           {(["google", "apple"] as const).map((provider) => {
             const Icon = PROVIDER_ICONS[provider];
+
             return (
               <Button
                 key={provider}
@@ -170,9 +180,7 @@ function Auth() {
             );
           })}
           {!online && (
-            <p className="text-xs text-muted-foreground">
-              Google and Apple need the internet.
-            </p>
+            <p className="text-xs text-muted-foreground">Google and Apple need the internet.</p>
           )}
         </div>
 
@@ -186,6 +194,7 @@ function Auth() {
             onChange={(e) => setEmail(e.target.value)}
             disabled={busy}
           />
+
           <Input
             type="password"
             required
@@ -196,8 +205,13 @@ function Auth() {
             onChange={(e) => setPw(e.target.value)}
             disabled={busy}
           />
+
           <Button className="w-full" type="submit" disabled={busy}>
-            {busy ? "Please wait..." : signup ? "Create account" : "Sign in"}
+            {busy
+              ? "Please wait..."
+              : signup
+                ? "Create account"
+                : "Sign in"}
           </Button>
         </form>
 
@@ -216,7 +230,9 @@ function Auth() {
             setMsg("");
           }}
         >
-          {signup ? "Have an account? Sign in" : "New here? Create an account"}
+          {signup
+            ? "Have an account? Sign in"
+            : "New here? Create an account"}
         </button>
       </div>
     </div>

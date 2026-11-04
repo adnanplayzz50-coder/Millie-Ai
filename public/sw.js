@@ -1,15 +1,15 @@
 // Millie service worker: network-first, never caches auth or API traffic.
-// When the internet is off, any page load is sent to the local Millie page (/localmillie).
-const CACHE = "millie-v4";
-const LOCAL = "/localmillie";
-const STATIC = /\.(png|svg|css|js|woff2?)$/;
+// It keeps the app pages and their code so Millie still opens with no internet.
+const CACHE = "millie-v5";
+const STATIC = /\.(png|svg|css|js|woff2?|ico|webmanifest)$/;
+// Pages worth saving. Any other page opened offline falls back to the saved chat page.
+const PAGES = ["/", "/chat", "/auth", "/welcome"];
 
 self.addEventListener("install", (event) => {
-  // Save the local page right away so it is ready before the first time you go offline.
   event.waitUntil(
     caches
       .open(CACHE)
-      .then((c) => c.add(LOCAL))
+      .then((c) => c.add("/chat"))
       .catch(() => {}),
   );
   self.skipWaiting();
@@ -28,7 +28,6 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
   if (req.method !== "GET" || url.origin !== self.location.origin) return;
-  // The connectivity check must always hit the real network.
   if (url.searchParams.has("ping")) return;
   if (
     url.pathname.startsWith("/~oauth") ||
@@ -38,25 +37,25 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  const isPage = req.mode === "navigate";
+  if (!isPage && !STATIC.test(url.pathname) && !PAGES.includes(url.pathname)) return;
+
   event.respondWith(
     fetch(req)
       .then((res) => {
-        // Keep only what the local page needs: its document and the static files.
-        if (res.ok && (url.pathname === LOCAL || STATIC.test(url.pathname))) {
+        if (res.ok && (STATIC.test(url.pathname) || PAGES.includes(url.pathname))) {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(req, copy));
         }
         return res;
       })
       .catch(async () => {
-        if (req.mode === "navigate") {
-          const local = await caches.match(LOCAL);
-          if (local) {
-            return url.pathname === LOCAL ? local : Response.redirect(url.origin + LOCAL, 302);
-          }
-          return Response.error();
+        const exact = await caches.match(req);
+        if (exact) return exact;
+        if (isPage) {
+          return (await caches.match("/chat")) || (await caches.match("/")) || Response.error();
         }
-        return (await caches.match(req)) || Response.error();
+        return Response.error();
       }),
   );
 });
